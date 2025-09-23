@@ -1464,6 +1464,18 @@
             pointer-events: none;
         }
 
+        #lounge-body .chat-message {
+            /* We reduce the max-width from 75% to a more readable 60% for the wider view */
+            max-width: 60%; 
+        }
+
+        /* For very large screens, a fixed max-width can look even better */
+        @media (min-width: 1200px) {
+            #lounge-body .chat-message {
+                max-width: 700px;
+            }
+        }
+
         .input::placeholder {
         color: #9e9ea7;
         }
@@ -1532,6 +1544,24 @@
             justify-content: center;
             align-items: center;
         }
+
+        .chat-list-item.unread .name {
+            font-weight: 900; /* Make the name extra bold */
+            color: #000;       /* Make the name black for emphasis */
+        }
+
+        .chat-list-item.unread::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 8px;
+            height: 8px;
+            background-color: var(--primary-solid);
+            border-radius: 50%;
+        }
+
         .following-modal.hidden {
             display: none;
         }
@@ -2196,6 +2226,12 @@
             /* These are from your old inline style */
             list-style: none;
             padding: 0;
+        }
+
+        .profile-pic-spacer {
+            width: 35px;         /* Same width as .chat-message .profile-pic */
+            margin-right: 10px;  /* Same margin as .chat-message .profile-pic */
+            flex-shrink: 0;      /* Prevents the spacer from collapsing */
         }
 
         .tos-container {
@@ -3077,7 +3113,8 @@
         }
 
         .circuit-views {
-            position: absolute;
+            display: none;
+            /*position: absolute;
             bottom: 10px;
             left: 50%;
             transform: translateX(-50%);
@@ -3089,7 +3126,7 @@
             font-weight: bold;
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 5px;*/
         }
 
         .chat-message .profile-pic {
@@ -4029,6 +4066,7 @@
         let socket = null;
         let unreadSenders = new Set();
         let unreadNotificationCount = 0;
+        let currentLoungeMessages = [];
         let newCircuitCoverUrl = '';
         let followingList = []; // This will store the IDs of users you follow
         let postCreationContext = { type: null, id: null };
@@ -4812,9 +4850,8 @@
             })
             .then(response => response.json())
             .then(messages => {
-                chatBody.innerHTML = '';
-                messages.forEach(msg => renderLoungeMessage(msg));
-                chatBody.scrollTop = chatBody.scrollHeight;
+                currentLoungeMessages = messages; // Store the history
+                renderLoungeMessages(currentLoungeMessages); // Render all at once
             });
         }
 
@@ -5324,37 +5361,39 @@
             })
             .then(response => response.json())
             .then(convos => {
-                window.messageHistory = {}; // Clear old local history
+                messageHistory = {}; // Clear old local history
+                unreadSenders.clear(); // Clear old unread state
 
                 convos.forEach(convo => {
                     const username = convo.other_user.username;
 
-                    // Ensure we have the user's profile data stored locally
                     if (!profileData[username]) {
                         profileData[username] = {
                             name: convo.other_user.fullName,
-                            username: convo.other_user.username,
-                            rank: convo.other_user.rank,
-                            account_type: convo.other_user.account_type
+                            ...convo.other_user
                         };
                     }
-                    // Store the last message for the snippet in the chat list
                     profileData[username].lastMessage = convo.last_message;
 
-                    // Re-create a minimal messageHistory so the user appears in the list.
-                    // Note: This doesn't load the full chat, just the last message for the list.
+                    // --- THIS IS THE NEW LOGIC ---
+                    // If the server told us there are unread messages, add to our set
+                    if (convo.unread_count > 0) {
+                        unreadSenders.add(username);
+                    }
+                    // --- END NEW LOGIC ---
+
                     if (!messageHistory[username]) {
                         messageHistory[username] = [];
                     }
                     messageHistory[username].push({
-                        sender: 'them', // Placeholder sender
+                        sender: 'them',
                         text: convo.last_message,
                         time: new Date(convo.timestamp)
                     });
                 });
 
-                // Re-render the chat list with the newly loaded data
-                renderChatList();
+                updateNotificationBadge(); // Update the badge with the initial count
+                renderChatList(); // Render the list, which will now show bolding
             })
             .catch(error => console.error("Could not fetch conversations:", error));
         }
@@ -5555,15 +5594,11 @@
 
         function openChat(username) {
             currentChatRecipient = username;
-
-            // --- ADD THIS NEW LOGIC ---
-            // If this user was in our "unread" set, mark them as read.
             if (unreadSenders.has(username)) {
-                unreadSenders.delete(username); // Remove them from the set
-                updateNotificationBadge();      // Update the badge count
+                unreadSenders.delete(username);
+                updateNotificationBadge();
             }
-            // --- END OF NEW LOGIC ---
-
+            renderChatList();
             showPage('messages-page');
         }
 
@@ -5586,46 +5621,42 @@
             socket.on('dm_received', (data) => {
                 const senderUsername = data.from;
 
-                // 1. Add the new message to our local history
-                if (!messageHistory[senderUsername]) {
-                    messageHistory[senderUsername] = [];
-                }
-                // This line is now correctly closed before the new logic starts.
+                if (!messageHistory[senderUsername]) messageHistory[senderUsername] = [];
                 messageHistory[senderUsername].push({
+                    id: data.id,
                     sender: senderUsername,
                     text: data.message,
-                    image: data.image, // <-- ADD THIS
+                    image: data.image,
                     time: new Date(data.created_at)
                 });
 
-                // 2. Update the "last message" snippet for the chat list
                 if (profileData[senderUsername]) {
-                    profileData[senderUsername].lastMessage = data.message ? data.message : 'Sent you an image.';
+                    profileData[senderUsername].lastMessage = data.message ? data.message : 'Sent an image.';
                 }
 
-                // 3. Refresh the UI
-                if (currentChatRecipient === senderUsername) {
-                    renderChatMessages();
+                const messagesPage = document.getElementById('messages-page');
+                const isViewingChat = messagesPage.classList.contains('active') && currentChatRecipient === senderUsername;
+
+                if (!isViewingChat) {
+                    unreadSenders.add(senderUsername);
+                    updateNotificationBadge();
                 }
+
                 renderChatList();
 
-                // 4. THIS IS THE CORRECTED NOTIFICATION LOGIC
-                // Only show a notification if the user isn't already on the messages page.
-                //const messagesPage = document.getElementById('messages-page');
-                if (currentChatRecipient !== data.from) {
-                        unreadSenders.add(data.from); // Add the sender's username
-                        updateNotificationBadge();    // Update the red circle count
-                        renderChatList();             // Re-render the list to show the bolded name
-                    }
+                if (isViewingChat) {
+                    renderChatMessages();
+                }
             });
             socket.on('new_notification', () => {
                 // When the server tells us there's a new notification, refetch our list
                 fetchNotifications();
             });
             socket.on('new_lounge_message', (msg) => {
-                renderLoungeMessage(msg);
-                const chatBody = document.getElementById('lounge-body');
-                chatBody.scrollTop = chatBody.scrollHeight;
+                if (msg.channel_id === currentLoungeChannelId) {
+                        currentLoungeMessages.push(msg); // Add new message to our list
+                        renderLoungeMessages(currentLoungeMessages); // Re-render the whole list
+                    }
             });
 
             socket.on('message_updated', (data) => {
@@ -6350,21 +6381,15 @@
             });
 
             sortedChats.forEach(key => {
-                // --- THIS IS THE FIX ---
-                // This more robust filter checks for the key 'me' AND your actual username
                 if (key === 'me' || key === profileData.me.username || key === 'ANNOUNCEMENTS') return;
-                // --- END OF FIX ---
-
                 const user = profileData[key];
                 if (!user) return;
                 const li = document.createElement('li');
                 li.className = 'chat-list-item';
 
-                const isUnread = unreadSenders.has(key);
-                if (isUnread) {
+                if (unreadSenders.has(key)) {
                     li.classList.add('unread');
                 }
-
                 if (key === currentChatRecipient) {
                     li.classList.add('active');
                 }
@@ -6377,10 +6402,8 @@
                         <p class="snippet">${user.lastMessage || 'Started a chat'}</p>
                     </div>
                 `;
-
                 li.onclick = () => openChat(key);
                 chatList.appendChild(li);
-
                 updateProfilePictures(key);
             });
         }
@@ -7171,45 +7194,103 @@ nsole.error("Error creating circuit:", error);
             });
         }
 
-        function renderLoungeMessage(msg) {
+        function renderLoungeMessages(messages, preserveScroll = false) {
             const chatBody = document.getElementById('lounge-body');
-            const msgEl = document.createElement('div');
-            const isSentByMe = msg.author.username === profileData.me.username;
-            const senderClass = isSentByMe ? 'sent' : 'received';
+            const currentScrollPosition = chatBody.scrollTop;
+            chatBody.innerHTML = ''; // Clear the body before rendering
 
-            msgEl.className = `chat-message ${senderClass}`;
+            messages.forEach((msg, index) => {
+                const prevMsg = messages[index - 1];
+                
+                // --- Grouping Logic ---
+                // A new group starts if:
+                // 1. It's the first message.
+                // 2. The sender is different from the previous one.
+                // 3. More than 3 minutes have passed since the last message.
+                const isNewGroup = !prevMsg || 
+                                msg.author.username !== prevMsg.author.username ||
+                                ((new Date(msg.timestamp) - new Date(prevMsg.timestamp)) / (1000 * 60) > 3);
 
-            // --- NEW: Generate content based on whether it's text or an image ---
-            let messageContent = '';
-            if (msg.image) {
-                messageContent = `<img src="${msg.image}" alt="Lounge image" style="border-radius: 15px; max-width: 100%;">`;
-            }
-            if (msg.text) {
-                // We wrap the text in a <p> tag to ensure consistent styling
-                messageContent += `<p>${linkifyUsernames(msg.text)}</p>`;
-            }
+                const isSentByMe = msg.author.username === profileData.me.username;
+                const senderClass = isSentByMe ? 'sent' : 'received';
 
-            // --- UPDATED RENDER LOGIC ---
-            if (isSentByMe) {
-                msgEl.innerHTML = `
-                    <div class="bubble-container">${messageContent}</div>
-                    <span class="message-timestamp">${formatTimestamp(new Date(msg.timestamp))}</span>`;
+                const msgEl = document.createElement('div');
+                msgEl.className = `chat-message ${senderClass} ${isNewGroup ? 'new-group' : ''}`;
+
+                // Create the row that holds the picture and the bubble
+                const messageRow = document.createElement('div');
+                messageRow.className = 'message-row';
+
+                // Add profile picture ONLY for the first message of a received group
+                if (isNewGroup && !isSentByMe) {
+                    const pic = document.createElement('div');
+                    pic.className = 'profile-pic';
+                    pic.setAttribute('data-user-pic-id', msg.author.username);
+                    messageRow.appendChild(pic);
+                    updateProfilePictures(msg.author.username);
+                } 
+                // --- ADD THIS BLOCK ---
+                else if (!isSentByMe) {
+                    // For other received messages, add an invisible spacer to align them
+                    const spacer = document.createElement('div');
+                    spacer.className = 'profile-pic-spacer';
+                    messageRow.appendChild(spacer);
+                }
+
+                let messageContent = '';
+                if (msg.image) {
+                    messageContent = `<img src="${msg.image}" alt="Lounge image">`;
+                }
+                if (msg.text) {
+                    messageContent += `<p>${linkifyUsernames(msg.text)}</p>`;
+                }
+                
+                // Add author name for the first message of a received group
+                let authorHtml = '';
+                if (isNewGroup && !isSentByMe) {
+                    const authorName = msg.author.fullName || msg.author.username;
+                    authorHtml = `<span class="message-author">${authorName} ${getRankIcon(msg.author.rank)}</span>`;
+                }
+                
+                // The bubble container now wraps the author name and the content
+                const bubbleContainer = document.createElement('div');
+                bubbleContainer.className = 'bubble-container';
+                bubbleContainer.innerHTML = authorHtml + messageContent;
+
+                // A wrapper for layout purposes
+                const textContentWrapper = document.createElement('div');
+                textContentWrapper.className = 'text-content-wrapper';
+                textContentWrapper.appendChild(bubbleContainer);
+                messageRow.appendChild(textContentWrapper);
+                
+                msgEl.appendChild(messageRow);
+
+                // Add timestamp for the LAST message in a group
+                const nextMsg = messages[index + 1];
+                const isLastInGroup = !nextMsg ||
+                                    msg.author.username !== nextMsg.author.username ||
+                                    ((new Date(nextMsg.timestamp) - new Date(msg.timestamp)) / (1000 * 60) > 3);
+
+                if (isLastInGroup) {
+                    const metaContainer = document.createElement('div');
+                    metaContainer.className = 'message-meta';
+                    const timestampEl = document.createElement('span');
+                    timestampEl.className = 'message-timestamp';
+                    timestampEl.dataset.timestamp = new Date(msg.timestamp).toISOString();
+                    timestampEl.textContent = formatTimestamp(new Date(msg.timestamp));
+                    metaContainer.appendChild(timestampEl);
+                    msgEl.appendChild(metaContainer);
+                }
+
+                chatBody.appendChild(msgEl);
+            });
+            
+            // Logic to scroll to the bottom
+            if (preserveScroll) {
+                chatBody.scrollTop = currentScrollPosition;
             } else {
-                const authorName = msg.author.fullName || msg.author.username;
-                msgEl.innerHTML = `
-                    <div class="profile-pic" data-user-pic-id="${msg.author.username}"></div>
-                    <div class="text-content-wrapper">
-                        <span class="message-author" style="font-size: 0.8em; color: #555; display: block; margin-bottom: 2px;">
-                            ${authorName} ${getRankIcon(msg.author.rank)}
-                        </span>
-                        <div class="bubble-container">${messageContent}</div>
-                    </div>
-                    <span class="message-timestamp">${formatTimestamp(new Date(msg.timestamp))}</span>`;
-                updateProfilePictures(msg.author.username);
+                chatBody.scrollTop = chatBody.scrollHeight;
             }
-
-            chatBody.appendChild(msgEl);
-            chatBody.scrollTop = chatBody.scrollHeight;
         }
 
 

@@ -152,12 +152,13 @@ class LoungeChannel(db.Model):
 
 class LoungeMessage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    text = db.Column(db.Text, nullable=True)  # Now nullable
-    image = db.Column(db.Text, nullable=True)  # <-- ADD THIS for images
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    text = db.Column(db.Text, nullable=True)
+    image = db.Column(db.Text, nullable=True)
+    # --- THIS IS THE FIX ---
+    # This explicitly saves the time in UTC, removing timezone confusion.
+    timestamp = db.Column(db.DateTime, default=lambda: datetime.now(pytz.timezone('UTC')))
+    # --- END OF FIX ---
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-
-    # THIS IS THE KEY CHANGE: Link messages to a channel, not a lounge
     channel_id = db.Column(db.Integer, db.ForeignKey('lounge_channel.id'), nullable=False)
 
     author = db.relationship("User", backref="lounge_messages")
@@ -192,6 +193,7 @@ class DM(db.Model):
     # --- MODIFICATIONS ---
     message = db.Column(db.Text, nullable=True)  # Now nullable
     image = db.Column(db.Text, nullable=True)  # New column for image data
+    is_read = db.Column(db.Boolean, default=False, nullable=False)
     # --- END MODIFICATIONS ---
 
     reaction = db.Column(db.String(10), nullable=True)
@@ -438,6 +440,9 @@ def get_dm_history(username):
 
     other_user = User.query.filter_by(username=username).first()
     if not other_user: return jsonify({"error": "User not found"}), 404
+
+    DM.query.filter_by(sender_id=other_user.id, receiver_id=user.id, is_read=False).update({"is_read": True})
+    db.session.commit()
 
     # Find conversation theme
     user1_id, user2_id = sorted((user.id, other_user.id))
@@ -841,7 +846,8 @@ def get_lounge_channel_messages(channel_id):
 
 @socketio.on('send_lounge_message')
 def handle_send_lounge_message(data):
-    user = None  # Your user lookup logic is correct
+    # Your user lookup logic is correct
+    user = None
     token_str = socket_connections.get(request.sid)
     if token_str:
         token_obj = APIToken.query.filter_by(token=token_str).first()
@@ -852,21 +858,31 @@ def handle_send_lounge_message(data):
         return
 
     text = data.get('text', '').strip()
-    lounge_id = data.get('lounge_id')
+    image_data = data.get('image') # Get image data if it exists
+    # FIX 1: Get the correct key from the frontend ('channel_id' instead of 'lounge_id')
+    channel_id = data.get('channel_id')
 
-    if not text or not lounge_id:
+    # Make sure we have content (text or image) and a channel to post to
+    if not (text or image_data) or not channel_id:
         return
 
-    new_message = LoungeMessage(text=text, user_id=user.id, lounge_id=lounge_id)
+    # FIX 2: Save the message with the correct 'channel_id'
+    new_message = LoungeMessage(
+        text=text,
+        image=image_data,
+        user_id=user.id,
+        channel_id=channel_id
+    )
     db.session.add(new_message)
     db.session.commit()
 
-    # --- THIS IS THE FIX (from last time) ---
-    # Create the full payload that the frontend expects.
+    # Create the full payload that the frontend's renderLoungeMessage function expects
     message_payload = {
         "id": new_message.id,
         "text": new_message.text,
+        "image": new_message.image,
         "timestamp": new_message.timestamp.isoformat(),
+        "channel_id": channel_id, # <-- ADD THIS LINE
         "author": {
             "username": user.username,
             "fullName": user.full_name,
@@ -874,9 +890,9 @@ def handle_send_lounge_message(data):
             "rank": user.rank
         }
     }
-    # --- END OF FIX ---
 
-    emit('new_lounge_message', message_payload, room=f"lounge_{lounge_id}")
+    # FIX 3: Emit the message to the correct 'channel_X' room that users are in
+    emit('new_lounge_message', message_payload, room=f"channel_{channel_id}")
 
 
 # ADD these new handlers for joining/leaving lounge rooms
@@ -972,11 +988,6 @@ def unfollow_user(username):
     current_user.following.remove(user_to_unfollow)
     db.session.commit()
     return jsonify({"ok": True, "message": f"You have unfollowed {username}"})
-
-
-@app.before_first_request
-def init_db():
-    db.create_all()
 
 
 def issue_api_token(user: User) -> str:
@@ -1801,39 +1812,42 @@ def get_conversations():
     if not user:
         return jsonify({"error": "unauthorized"}), 401
 
-    # Get all messages sent or received by the user
+    # --- NEW: Efficiently get all unread message counts in one query ---
+    unread_counts_query = db.session.query(
+        DM.sender_id, func.count(DM.id)
+    ).filter_by(
+        receiver_id=user.id, is_read=False
+    ).group_by(DM.sender_id).all()
+    
+    unread_map = dict(unread_counts_query)
+    # --- END NEW ---
+
     sent_dms = DM.query.filter_by(sender_id=user.id).all()
     received_dms = DM.query.filter_by(receiver_id=user.id).all()
-
     conversations = {}
-
-    # Process messages to build a list of conversations with the last message
     all_dms = sorted(sent_dms + received_dms, key=lambda dm: dm.created_at)
 
     for dm in all_dms:
-        if dm.sender_id == user.id:  # It's a sent message
-            other_user = dm.receiver
-            # If there's text, show it. If not, show the image placeholder.
+        other_user = dm.receiver if dm.sender_id == user.id else dm.sender
+        if dm.sender_id == user.id:
             last_message_text = f"You: {dm.message}" if dm.message else "You sent an image."
-        else:  # It's a received message
-            other_user = dm.sender
+        else:
             last_message_text = dm.message if dm.message else "Sent you an image."
 
         conversations[other_user.username] = {
             "last_message": last_message_text,
             "timestamp": dm.created_at.isoformat(),
+            "unread_count": unread_map.get(other_user.id, 0), # <-- ADD THIS
             "other_user": {
                 "username": other_user.username,
                 "fullName": other_user.full_name,
                 "rank": other_user.rank,
                 "profile_pic": other_user.profile_pic,
-                "account_type": other_user.account_type  # 👈 ADD THIS LINE
+                "account_type": other_user.account_type
             }
         }
 
-    # Convert the dictionary to a sorted list
     sorted_convos = sorted(conversations.values(), key=lambda x: x['timestamp'], reverse=True)
-
     return jsonify(sorted_convos)
 
 
