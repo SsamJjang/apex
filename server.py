@@ -83,8 +83,9 @@ class User(db.Model):
         primaryjoin=(followers.c.follower_id == id),
         secondaryjoin=(followers.c.followed_id == id),
         backref=db.backref('followers', lazy='dynamic'),
-        lazy='dynamic'
-    )
+        lazy='dynamic')
+    lounge_memberships = db.relationship('LoungeMember', backref='user', cascade='all, delete-orphan')
+    
 
 
 class DailyView(db.Model):
@@ -132,6 +133,15 @@ class Conversation(db.Model):
     __table_args__ = (db.UniqueConstraint('user1_id', 'user2_id', name='_user_conversation_uc'),)
 
 
+class LoungeMember(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    lounge_id = db.Column(db.Integer, db.ForeignKey('lounge.id'), nullable=False)
+    role = db.Column(db.String(50), nullable=False, default='member')  # 'member', 'moderator', 'owner'
+
+    # A user can only have one role per lounge
+    __table_args__ = (db.UniqueConstraint('user_id', 'lounge_id', name='_user_lounge_uc'),)
+
 class Lounge(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -142,6 +152,7 @@ class Lounge(db.Model):
     owner = db.relationship("User", backref="owned_lounges")
     # Add a relationship to easily get channels from a lounge
     channels = db.relationship("LoungeChannel", backref="lounge", cascade="all, delete-orphan")
+    members = db.relationship('LoungeMember', backref='lounge', cascade="all, delete-orphan")
 
 
 class LoungeChannel(db.Model):
@@ -268,6 +279,10 @@ def is_users_birthday(dob_str: str) -> bool:
         # Handle cases where the DOB is not a valid date string
         return False
 
+
+def get_lounge_role(user_id, lounge_id):
+    membership = LoungeMember.query.filter_by(user_id=user_id, lounge_id=lounge_id).first()
+    return membership.role if membership else None
 
 def _increment_view(item_id, item_type):
     today_kst = datetime.now(KST).date()
@@ -762,13 +777,17 @@ def create_lounge():
         owner_id=user.id
     )
     db.session.add(new_lounge)
-    db.session.flush()  # Flush to get the new_lounge.id
+    db.session.flush()
 
-    # --- ADD THIS BLOCK TO CREATE DEFAULT CHANNELS ---
+    # --- THIS IS THE NEW LOGIC ---
+    # Add the creator as the owner in the LoungeMember table
+    owner_membership = LoungeMember(user_id=user.id, lounge_id=new_lounge.id, role='owner')
+    db.session.add(owner_membership)
+    # --- END NEW LOGIC ---
+
     general_channel = LoungeChannel(name="general", lounge_id=new_lounge.id)
     random_channel = LoungeChannel(name="random", lounge_id=new_lounge.id)
     db.session.add_all([general_channel, random_channel])
-    # --- END BLOCK ---
 
     db.session.commit()
 
@@ -778,6 +797,35 @@ def create_lounge():
         "lounge": {"id": new_lounge.id, "name": new_lounge.name}
     }), 201
 
+# In server.py, add this new endpoint
+
+@app.get("/api/lounge/<int:lounge_id>/members")
+def get_lounge_members(lounge_id):
+    user = auth_user()
+    if not user: return jsonify({"error": "unauthorized"}), 401
+
+    # This query joins LoungeMember and User tables to get full details
+    members = db.session.query(
+        User, LoungeMember.role
+    ).join(
+        LoungeMember, User.id == LoungeMember.user_id
+    ).filter(
+        LoungeMember.lounge_id == lounge_id
+    ).all()
+
+    if not members:
+        return jsonify([])
+
+    member_list = [
+        {
+            "username": member_user.username,
+            "fullName": member_user.full_name,
+            "profile_pic": member_user.profile_pic,
+            "rank": member_user.rank,
+            "role": role
+        } for member_user, role in members
+    ]
+    return jsonify(member_list)
 
 @app.get("/api/lounges")
 def get_lounges():
@@ -807,7 +855,17 @@ def get_lounge_channels(lounge_id):
         return jsonify({"error": "Lounge not found"}), 404
 
     channels = LoungeChannel.query.filter_by(lounge_id=lounge.id).order_by(LoungeChannel.id).all()
-    return jsonify([{"id": c.id, "name": c.name} for c in channels])
+    
+    # --- THIS IS THE NEW PART ---
+    # Get the user's role for this specific lounge
+    user_role = get_lounge_role(user.id, lounge_id)
+    # --- END NEW PART ---
+    
+    # We now return an object containing both channels and the user's role
+    return jsonify({
+        "channels": [{"id": c.id, "name": c.name} for c in channels],
+        "user_role": user_role
+    })
 
 
 # Modify the message fetching endpoint to get messages from a CHANNEL
@@ -1487,6 +1545,48 @@ def create_circuit():
         }
     }), 201
 
+@app.put("/api/lounge/channel/<int:channel_id>")
+def edit_lounge_channel(channel_id):
+    user = auth_user()
+    if not user: return jsonify({"error": "unauthorized"}), 401
+
+    channel = LoungeChannel.query.get(channel_id)
+    if not channel: return jsonify({"error": "Channel not found"}), 404
+
+    user_role = get_lounge_role(user.id, channel.lounge_id)
+    if user_role not in ['owner', 'moderator']:
+        return jsonify({"error": "Forbidden: You do not have permission to edit channels."}), 403
+
+    data = request.get_json(force=True)
+    new_name = data.get("name", "").strip()
+    if not new_name or len(new_name) > 100:
+        return jsonify({"error": "Invalid channel name"}), 400
+
+    channel.name = new_name
+    db.session.commit()
+    return jsonify({"ok": True, "message": "Channel name updated."})
+
+
+@app.delete("/api/lounge/channel/<int:channel_id>")
+def delete_lounge_channel(channel_id):
+    user = auth_user()
+    if not user: return jsonify({"error": "unauthorized"}), 401
+
+    channel = LoungeChannel.query.get(channel_id)
+    if not channel: return jsonify({"error": "Channel not found"}), 404
+
+    user_role = get_lounge_role(user.id, channel.lounge_id)
+    if user_role not in ['owner', 'moderator']:
+        return jsonify({"error": "Forbidden: You do not have permission to delete channels."}), 403
+    
+    if channel.name == 'general':
+        return jsonify({"error": "The #general channel cannot be deleted."}), 400
+        
+    # Delete associated messages before deleting the channel
+    LoungeMessage.query.filter_by(channel_id=channel.id).delete()
+    db.session.delete(channel)
+    db.session.commit()
+    return jsonify({"ok": True, "message": "Channel deleted."})
 
 @app.post("/api/circuit/<int:circuit_id>/posts")
 def create_circuit_post(circuit_id):

@@ -1791,6 +1791,35 @@
             margin: 0;
         }
 
+        .context-menu {
+            position: absolute;
+            z-index: 1000;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            min-width: 160px;
+            padding: 5px 0;
+            animation: zoomIn 0.1s ease-out;
+        }
+
+        .context-menu-item {
+            display: block;
+            padding: 10px 15px;
+            color: var(--text);
+            text-decoration: none;
+            font-size: 0.9em;
+            cursor: pointer;
+        }
+
+        .context-menu-item:hover {
+            background-color: #f0f2f5;
+        }
+
+        .context-menu-item.danger {
+            color: #e74c3c;
+        }
+
         .lounge-channel-category {
             color: #666;
             font-size: 0.8em;
@@ -2434,6 +2463,28 @@
             border-radius: 15px;
             opacity: 0; /* Hidden by default */
             transition: opacity 0.2s ease;
+        }
+
+        .lounge-channel-item {
+            display: flex; /* Use flexbox for alignment */
+            justify-content: space-between; /* Pushes name and button to opposite ends */
+            align-items: center; /* Vertically centers them */
+        }
+
+        .channel-options-btn {
+            display: none; /* Hide the button by default */
+            padding: 2px 6px;
+            border-radius: 5px;
+            cursor: pointer;
+            color: #555;
+        }
+
+        .lounge-channel-item:hover .channel-options-btn {
+            display: block; /* Show the button on hover */
+        }
+
+        .channel-options-btn:hover {
+            background-color: #d1d5db;
         }
         .circuit-post:hover .like-button-container {
             opacity: 1; /* Show on hover */
@@ -4028,7 +4079,17 @@
             </div>
             <div class="header-center"><p id="lounge-header-title">The Lounge</p></div>
             <div class="header-right"></div>
+            <div class="header-right">
+            <div class="profile-menu-button" onclick="toggleLoungeMenu(event)">
+                <i class="fas fa-ellipsis-v"></i>
+            </div>
+            <div id="lounge-menu-dropdown" class="profile-menu-dropdown hidden">
+                <a href="#" class="profile-menu-item" onclick="showLoungeMembers()">Show Members</a>
+                <a href="#" class="profile-menu-item" onclick="showLoungeDetails()">Show Details</a>
+            </div>
+            </div>
         </header>
+        
         <main class="messages-main"> <div class="lounge-container">
                 <div class="lounge-sidebar">
                     <div class="lounge-sidebar-header">
@@ -4130,6 +4191,7 @@
         let verificationCodeSent = false;
         let currentCircuitId = null;
         let currentCircuitDetails = null;
+        let currentUserLoungeRole = null; // Add this new global variable
         let allCircuitsData = [];
         let newPostImageUrl = '';
 
@@ -4745,6 +4807,7 @@
             })
             .then(response => response.json())
             .then(lounges => {
+                allLoungesData = lounges;
                 const row = document.getElementById('lounge-list-row');
                 row.innerHTML = ''; // Clear previous items
 
@@ -4818,8 +4881,24 @@
                 const li = document.createElement('li');
                 li.className = 'lounge-channel-item';
                 li.id = `channel-item-${channel.id}`;
-                li.textContent = `# ${channel.name}`;
+
+                // --- THE FIX ---
+                // The click event is now on the entire list item (li).
                 li.onclick = () => loadLoungeChannel(channel.id, channel.name);
+                // --- END OF FIX ---
+
+                const channelNameSpan = document.createElement('span');
+                channelNameSpan.textContent = `# ${channel.name}`;
+                // The onclick event was removed from here.
+                li.appendChild(channelNameSpan);
+
+                // This part for the menu button remains the same.
+                // It uses event.stopPropagation() so clicking it won't trigger the li's click event.
+                const menuBtn = document.createElement('i');
+                menuBtn.className = 'fas fa-ellipsis-v channel-options-btn';
+                menuBtn.onclick = (event) => openChannelContextMenu(event, channel.id, channel.name);
+                li.appendChild(menuBtn);
+
                 list.appendChild(li);
             });
         }
@@ -4902,20 +4981,23 @@
             document.getElementById('lounge-header-title').textContent = loungeName;
             document.getElementById('lounge-sidebar-title').textContent = loungeName;
             document.getElementById('lounge-channels-list').innerHTML = '<li>Loading channels...</li>';
-            document.getElementById('lounge-body').innerHTML = ''; // Clear body
+            document.getElementById('lounge-body').innerHTML = '';
 
             showPage('lounge-page');
 
-            // Fetch the channels for this lounge
             fetch(`${API_BASE_URL}/api/lounge/${loungeId}/channels`, {
                 headers: { 'Authorization': `Bearer ${apiToken}` }
             })
             .then(response => response.json())
-            .then(channels => {
-                renderLoungeChannels(channels);
-                // Automatically load the first channel if it exists
-                if (channels.length > 0) {
-                    loadLoungeChannel(channels[0].id, channels[0].name);
+            .then(data => {
+                // --- THIS IS THE CHANGE ---
+                // Store the user's role and render the channels
+                currentUserLoungeRole = data.user_role;
+                renderLoungeChannels(data.channels);
+                // --- END CHANGE ---
+
+                if (data.channels.length > 0) {
+                    loadLoungeChannel(data.channels[0].id, data.channels[0].name);
                 }
             });
         }
@@ -6713,7 +6795,7 @@
             if (currentSignupType === 'student' || currentSignupType === 'teacher') {
                 const dobValue = document.getElementById('signupDOB').value;
                 payload.dob = dobValue; // Add to payload for the API call
-
+                
                 if (!dobValue) {
                     showValidationError('signupDOB', 'Date of Birth is required.');
                     isValid = false;
@@ -6734,7 +6816,7 @@
                     return;
                 }
             }
-
+            
             // --- Send to API ---
             fetch(`${API_BASE_URL}/api/signup`, {
                 method: 'POST',
@@ -6752,11 +6834,11 @@
                         showValidationError('signupUsername', error);
                     } else if (error.includes('Email')) {
                         showValidationError('signupEmail', error);
-
-                    // --- THIS IS THE FIX ---
+                        
+                        // --- THIS IS THE FIX ---
                     } else if (error.includes('Date of Birth')) {
                         showValidationError('signupDOB', error); // Show error under the correct field
-                    // --- END OF FIX ---
+                        // --- END OF FIX ---
 
                     } else {
                         // For generic errors, show it under the button
@@ -6773,19 +6855,19 @@
         function renderArticleCards(articles, containerId) {
             const grid = document.getElementById(containerId);
             grid.innerHTML = ''; // Clear previous content
-
+            
             if (articles.length === 0) {
                 grid.innerHTML = '<li>No articles found.</li>';
                 return;
             }
-
+            
             articles.forEach(article => {
                 const card = document.createElement('div');
                 card.className = 'card';
                 // This HTML now has the updated "by Author" text and a clickable school tag
                 card.innerHTML = `
-                    <div class="card__img">
-                        <span class="card__span" onclick="showAllArticlesPage('${article.schoolTag}')">${article.schoolTag}</span>
+                <div class="card__img">
+                    <span class="card__span" onclick="showAllArticlesPage('${article.schoolTag}')">${article.schoolTag}</span>
                     </div>
                     <div class="card-int">
                         <p class="card-int__title">${article.title}</p>
@@ -7170,6 +7252,45 @@ nsole.error("Error creating circuit:", error);
             .catch(error => console.error("Error fetching posts:", error));
         }
 
+
+        function editLoungeChannel(channelId) {
+            const newName = prompt("Enter the new channel name:");
+            if (!newName || !newName.trim()) return;
+
+            fetch(`${API_BASE_URL}/api/lounge/channel/${channelId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiToken}` },
+                body: JSON.stringify({ name: newName.trim() })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.ok) {
+                    // Refresh the channels list to show the new name
+                    showLounge(currentLoungeId, document.getElementById('lounge-header-title').textContent);
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            });
+        }
+
+        function deleteLoungeChannel(channelId) {
+            if (confirm('Are you sure you want to permanently delete this channel and all its messages?')) {
+                fetch(`${API_BASE_URL}/api/lounge/channel/${channelId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${apiToken}` }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.ok) {
+                        // Refresh the lounge view
+                        showLounge(currentLoungeId, document.getElementById('lounge-header-title').textContent);
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                });
+            }
+        }
+
         function getAccountTypeTag(accountType) {
             if (accountType === 'teacher') {
                 return '<span class="account-type-tag tag-teacher">Teacher</span>';
@@ -7425,6 +7546,94 @@ nsole.error("Error creating circuit:", error);
         }
 
         // In html.html
+        
+        function toggleLoungeMenu(event) {
+            event.stopPropagation();
+            document.getElementById('lounge-menu-dropdown').classList.toggle('hidden');
+        }
+
+        function openChannelContextMenu(event, channelId, channelName) {
+            event.stopPropagation();
+            // Close any existing context menus first
+            document.querySelectorAll('.context-menu').forEach(menu => menu.remove());
+
+            const menu = document.createElement('div');
+            menu.className = 'context-menu';
+
+            // Menu Items
+            let menuItems = `<a class="context-menu-item" onclick="showLoungeDetails()">Show Description</a>`;
+            if (currentUserLoungeRole === 'owner' || currentUserLoungeRole === 'moderator') {
+                menuItems += `
+                    <a class="context-menu-item" onclick="editLoungeChannel(${channelId})">Edit Name</a>
+                    <a class="context-menu-item danger" onclick="deleteLoungeChannel(${channelId})">Delete Channel</a>
+                `;
+            }
+            menu.innerHTML = menuItems;
+
+            document.body.appendChild(menu);
+
+            // Position the menu by the cursor
+            const menuWidth = menu.offsetWidth;
+            const menuHeight = menu.offsetHeight;
+            let x = event.pageX;
+            let y = event.pageY;
+
+            // Prevent menu from going off-screen
+            if (x + menuWidth > window.innerWidth) x -= menuWidth;
+            if (y + menuHeight > window.innerHeight) y -= menuHeight;
+
+            menu.style.left = `${x}px`;
+            menu.style.top = `${y}px`;
+        }
+
+        function showLoungeMembers() {
+            const modal = document.getElementById('lounge-members-modal');
+            const list = document.getElementById('lounge-members-list');
+            modal.classList.remove('hidden');
+            list.innerHTML = '<li>Loading members...</li>';
+
+            fetch(`${API_BASE_URL}/api/lounge/${currentLoungeId}/members`, {
+                headers: { 'Authorization': `Bearer ${apiToken}` }
+            })
+            .then(response => response.json())
+            .then(members => {
+                list.innerHTML = '';
+                members.forEach(member => {
+                    const li = document.createElement('li');
+                    li.className = 'following-list-item'; // Reusing existing styles
+                    li.onclick = () => {
+                        closeLoungeMembersModal();
+                        showProfile(member.username);
+                    };
+                    li.innerHTML = `
+                        <div class="profile-pic" data-user-pic-id="${member.username}"></div>
+                        <div class="user-info">
+                            <span class="username">${member.fullName} (${member.role})</span>
+                            <span class="fullname">@${member.username}</span>
+                        </div>`;
+                    list.appendChild(li);
+                    updateProfilePictures(member.username);
+                });
+            });
+        }
+
+        function showLoungeDetails() {
+            const loungeName = document.getElementById('lounge-header-title').textContent;
+            const loungeDescription = allLoungesData.find(l => l.id === currentLoungeId)?.description || "No description available.";
+
+            document.getElementById('lounge-details-modal-title').textContent = loungeName;
+            document.getElementById('lounge-details-modal-description').textContent = loungeDescription;
+            document.getElementById('lounge-details-modal').classList.remove('hidden');
+        }
+
+        function closeLoungeMembersModal() { document.getElementById('lounge-members-modal').classList.add('hidden'); }
+        function closeLoungeDetailsModal() { document.getElementById('lounge-details-modal').classList.add('hidden'); }
+
+        // Add this click listener to close menus when clicking elsewhere
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.context-menu').forEach(menu => menu.remove());
+            document.getElementById('lounge-menu-dropdown').classList.add('hidden');
+        });
 
         function handleTerminalCommand() {
             const inputField = document.getElementById('terminal-input');
@@ -8116,6 +8325,26 @@ nsole.error("Error creating circuit:", error);
                     Start Chat
                 </button>
             </div>
+        </div>
+    </div>
+    <div id="lounge-members-modal" class="following-modal hidden">
+        <div class="following-modal-content">
+            <div class="following-modal-header">
+                <span>Lounge Members</span>
+                <span class="close-following-modal" onclick="closeLoungeMembersModal()">&times;</span>
+            </div>
+            <ul id="lounge-members-list" class="following-list">
+                </ul>
+        </div>
+    </div>
+
+    <div id="lounge-details-modal" class="following-modal hidden">
+        <div class="following-modal-content" style="max-width: 400px; padding: 20px;">
+            <div class="following-modal-header">
+                <span id="lounge-details-modal-title">Lounge Details</span>
+                <span class="close-following-modal" onclick="closeLoungeDetailsModal()">&times;</span>
+            </div>
+            <p id="lounge-details-modal-description" style="line-height: 1.6; margin-top: 15px;"></p>
         </div>
     </div>
     </body>
