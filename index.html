@@ -482,13 +482,14 @@
 
         /* This new div will handle the scrolling */
         .profile-row-scroller {
-            overflow-x: auto;
+            overflow-x: hidden;
             padding-bottom: 5px; /* Add a little space for the scrollbar */
         }
 
         .profile-row {
             display: flex;
             white-space: nowrap;
+            flex-wrap: nowrap;
             padding: 15px 5px; /* Add vertical padding to make room for the glow */
         }
 
@@ -501,6 +502,7 @@
             text-decoration: none;
             color: #333;
             cursor: pointer;
+            flex-shrink: 0;
         }
 
         .user-username-text {
@@ -739,6 +741,7 @@
 
         .profile-row .circuit-card {
             margin-right: 15px;
+            flex-shrink: 0;
         }
 
 
@@ -947,6 +950,10 @@
 
         #emoji-panel span:hover {
             transform: scale(1.2);
+        }
+
+        .hidden {
+            display: none !important;
         }
 
 
@@ -1240,6 +1247,76 @@
             bottom: -6px; right: -6px;
             width: 40px; height: 40px;
             font-size: 20px;
+        }
+
+        .lounge-cover-preview-banner {
+            height: 120px; /* Make it a wide rectangle */
+            background-size: cover; /* Make the image fill the banner */
+            background-position: center;
+        }
+
+        /* 2. Styles for the new privacy option cards */
+        .privacy-options-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px; /* Space between the cards */
+        }
+
+        .privacy-options-container label {
+            flex: 1; /* Make each label take up equal space */
+            cursor: pointer;
+        }
+
+        /* Hide the original radio button */
+        .privacy-options-container input[type="radio"] {
+            display: none;
+        }
+
+        .privacy-option-card {
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            transition: all 0.2s ease-in-out;
+            height: 100%; /* Make cards fill the label height */
+        }
+
+        .privacy-option-card:hover {
+            border-color: #bbb;
+            transform: translateY(-5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+
+        .privacy-option-card i {
+            font-size: 1.8em;
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        .privacy-option-card h4 {
+            margin: 0 0 5px 0;
+            font-size: 1.1em;
+        }
+
+        .privacy-option-card p {
+            margin: 0;
+            font-size: 0.85em;
+            color: #777;
+            line-height: 1.4;
+        }
+
+        /* Style for the SELECTED card */
+        .privacy-options-container input[type="radio"]:checked + .privacy-option-card {
+            border-color: var(--primary-solid);
+            box-shadow: 0 0 15px rgba(0, 102, 255, 0.2);
+            background-color: #f7faff;
+        }
+
+        .privacy-options-container input[type="radio"]:checked + .privacy-option-card i {
+            background: var(--primary);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
         }
 
         .loader {
@@ -1793,7 +1870,7 @@
 
         .context-menu {
             position: absolute;
-            z-index: 1000;
+            z-index: 3000;
             background-color: #fff;
             border: 1px solid #ddd;
             border-radius: 8px;
@@ -1826,6 +1903,45 @@
             font-weight: bold;
             text-transform: uppercase;
             padding: 15px 10px 5px;
+        }
+
+        .image-preview-container {
+            padding: 10px 20px 0 20px;
+            border-top: 1px solid #dbdbdb;
+            background-color: #f9f9f9;
+        }
+
+        .image-preview-box {
+            position: relative;
+            display: inline-block;
+            background-color: #e9ecef;
+            padding: 8px;
+            border-radius: 12px;
+        }
+
+        .preview-image {
+            max-height: 100px;
+            max-width: 200px;
+            display: block;
+            border-radius: 8px;
+        }
+
+        .remove-preview-btn {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: #333;
+            color: white;
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            font-size: 14px;
+            font-weight: bold;
+            line-height: 18px;
+            text-align: center;
+            cursor: pointer;
+            z-index: 1;
         }
 
         .lounge-channel-item {
@@ -3843,7 +3959,7 @@
     <div id="create-lounge-page" class="page">
         <header>
             <div class="header-left">
-                <a href="#" class="fancy-back-button" onclick="showPage('index-page')"><i class="fas fa-arrow-left"></i> Back</a>
+                <a href="#" class="fancy-back-button" onclick="showPage('all-lounges-page')"><i class="fas fa-arrow-left"></i> Back</a>
             </div>
             <div class="header-center"><p>New Lounge</p></div>
             <div class="header-right">
@@ -3851,9 +3967,46 @@
             </div>
         </header>
         <main>
-            <div class="auth-form">
-                <input type="text" id="loungeName" placeholder="Lounge Name" maxlength="30">
+            <div class="auth-form" style="max-width: 600px;"> <div class="circuit-cover-uploader">
+                    <label for="loungeCoverInput">Cover Image (Optional)</label>
+                    <div id="loungeCoverPreview" class="circuit-cover-preview lounge-cover-preview-banner">
+                        <span>+ Upload Banner</span>
+                    </div>
+                    <input type="file" id="loungeCoverInput" accept="image/*" style="display: none;">
+                </div>
+
+                <input type="text" id="loungeName" placeholder="Lounge Name" maxlength="30" style="margin-top: 15px;">
                 <textarea id="loungeDescription" placeholder="A short description for your lounge..." rows="3"></textarea>
+                
+                <div class="form-field-wrapper" style="text-align: left; margin-top: 20px;">
+                    <label style="font-weight: bold; margin-bottom: 10px; display: block;">Privacy Settings</label>
+                    <div class="privacy-options-container">
+                        <label for="privacyPublic">
+                            <input type="radio" id="privacyPublic" name="loungePrivacy" value="public" checked>
+                            <div class="privacy-option-card">
+                                <i class="fas fa-globe-americas"></i>
+                                <h4>Public</h4>
+                                <p>Anyone can find and join.</p>
+                            </div>
+                        </label>
+                        <label for="privacyUnlisted">
+                            <input type="radio" id="privacyUnlisted" name="loungePrivacy" value="unlisted">
+                            <div class="privacy-option-card">
+                                <i class="fas fa-link"></i>
+                                <h4>Unlisted</h4>
+                                <p>Anyone with the link can join.</p>
+                            </div>
+                        </label>
+                        <label for="privacyPrivate">
+                            <input type="radio" id="privacyPrivate" name="loungePrivacy" value="private">
+                            <div class="privacy-option-card">
+                                <i class="fas fa-lock"></i>
+                                <h4>Private</h4>
+                                <p>Only invited members can join.</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
@@ -3966,9 +4119,7 @@
                 </div>
 
                 <div class="active-chat-pane">
-
                     <div id="active-chat-header" class="active-chat-header"></div>
-
 
                     <div id="chat-body" class="chat-body">
                         <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100%; color:#8e8e8e;">
@@ -3994,6 +4145,8 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <div id="dm-image-preview-container" class="image-preview-container hidden"></div>
 
                     <div class="chat-input">
                         <button id="attach-btn" class="emoji-btn" onclick="document.getElementById('image-upload-input').click()">
@@ -4002,13 +4155,11 @@
                         <input type="file" id="image-upload-input" accept="image/*" style="display: none;" onchange="handleImageUpload(event)">
                         <button id="emoji-btn" class="emoji-btn"><i class="fas fa-smile"></i></button>
                         <input type="text" id="main-chat-input-field" placeholder="Message..." autocomplete="off" />
-
-                        <button onclick="sendMessage({text: document.getElementById('main-chat-input-field').value})">Send</button>
-
+                        <button onclick="sendMessage()">Send</button> 
 
                     </div>
-                    <div id="emoji-panel" class="emoji-panel hidden"></div>
 
+                    <div id="emoji-panel" class="emoji-panel hidden"></div>
                 </div> </div> </main>
     </div>
 
@@ -4107,15 +4258,24 @@
                 <div class="active-lounge-pane">
                     <div id="lounge-body" class="chat-body">
                         </div>
+
+                    <div id="lounge-image-preview-container" class="image-preview-container hidden"></div>
+
                     <div id="lounge-input" class="chat-input">
                         <button class="emoji-btn" onclick="document.getElementById('lounge-image-upload').click()">
                             <i class="fas fa-paperclip"></i>
                         </button>
                         <input type="file" id="lounge-image-upload" accept="image/*" style="display: none;" onchange="handleLoungeImageUpload(event)">
+                        
+                        <button id="lounge-emoji-btn" class="emoji-btn"><i class="fas fa-smile"></i></button>
 
                         <input type="text" id="lounge-input-field" placeholder="Message in #general..." autocomplete="off"/>
-                        <button onclick="sendLoungeMessage({text: document.getElementById('lounge-input-field').value})">Send</button>
+                        <button onclick="sendLoungeMessage()">Send</button>
+
+
+                        <div id="lounge-emoji-panel" class="emoji-panel hidden"></div>
                     </div>
+                </div>
                 </div>
             </div>
         </main>
@@ -4125,6 +4285,7 @@
         const API_BASE_URL = 'http://127.0.0.1:5000'
         let apiToken = null;
         let socket = null;
+        let newLoungeCoverUrl = null;
         let unreadSenders = new Set();
         let unreadNotificationCount = 0;
         let currentLoungeMessages = [];
@@ -4133,6 +4294,8 @@
         let postCreationContext = { type: null, id: null };
         let currentCircuitPosts = [];
         let currentLoungeId = null;
+        let dmImagePreviewUrl = null;
+        let loungeImagePreviewUrl = null;
         const profileData = {
             me: {
                 name: '',
@@ -4446,7 +4609,7 @@
             container.innerHTML = '<p style="padding-left: 15px;">Loading trending content...</p>';
 
             // --- MODIFIED LINE ---
-            fetch(`${API_BASE_URL}/api/trending?limit=5`, { headers: { 'Authorization': `Bearer ${apiToken}` } })
+            fetch(`${API_BASE_URL}/api/trending?limit=7`, { headers: { 'Authorization': `Bearer ${apiToken}` } }) // <-- MODIFIED LINE
             // --- END MODIFICATION ---
                 .then(response => {
                     if (!response.ok) {
@@ -4669,35 +4832,77 @@
 
             // Add a listener to the whole page to close the panel
             document.addEventListener('click', (event) => {
-                // This part handles closing the main profile menu
-                const profileMenu = document.getElementById('profile-menu-dropdown');
-                if (profileMenu && !profileMenu.classList.contains('hidden')) {
-                    profileMenu.classList.add('hidden');
-                }
+                // This function will now handle closing all menus and modals when the user clicks away.
 
-                // This part handles closing the theme sidebar
-                const themeSidebar = document.getElementById('theme-sidebar');
-                if (themeSidebar && !themeSidebar.classList.contains('hidden')) {
-                    // Only close if the click was OUTSIDE the sidebar
-                    if (!themeSidebar.contains(event.target)) {
-                        closeThemeSidebar();
-                    }
-                }
-
-                // --- NEW LOGIC TO CLOSE MESSAGE MENUS AND REACTION PICKERS ---
-                // Close any open message option dropdowns
-                document.querySelectorAll('.message-options-dropdown').forEach(d => {
-                    if (!d.classList.contains('hidden') && !d.parentElement.contains(event.target)) {
-                        d.classList.add('hidden');
+                // 1. Close all context menus (right-click menus)
+                // We check if the click was outside the menu itself before removing it.
+                document.querySelectorAll('.context-menu').forEach(menu => {
+                    if (!menu.contains(event.target)) {
+                        menu.remove();
                     }
                 });
 
-                // Close any open reaction pickers
-                const reactionPicker = document.querySelector('.reaction-picker');
-                if (reactionPicker && !reactionPicker.contains(event.target)) {
-                    reactionPicker.remove();
+                // 2. Close the lounge header dropdown menu
+                const loungeMenu = document.getElementById('lounge-menu-dropdown');
+                const loungeMenuBtn = document.querySelector('#lounge-page .profile-menu-button');
+                if (loungeMenu && !loungeMenu.classList.contains('hidden')) {
+                    // Close if the click is outside the menu AND outside its button
+                    if (!loungeMenu.contains(event.target) && !loungeMenuBtn.contains(event.target)) {
+                        loungeMenu.classList.add('hidden');
+                    }
                 }
-                // --- END OF NEW LOGIC ---
+                
+                // 3. Close the profile page dropdown menu (if it exists)
+                const profileMenu = document.getElementById('profile-menu-dropdown');
+                const profileMenuBtn = document.querySelector('#profile-page .profile-menu-button');
+                if (profileMenu && !profileMenu.classList.contains('hidden')) {
+                    if (!profileMenu.contains(event.target) && profileMenuBtn && !profileMenuBtn.contains(event.target)) {
+                        profileMenu.classList.add('hidden');
+                    }
+                }
+
+                // 4. Close Modals if the click is on the dark background overlay
+                if (event.target.classList.contains('following-modal')) {
+                    closeLoungeMembersModal();
+                    closeLoungeDetailsModal();
+                    closeCircuitDetailsModal();
+                    // Add any other modals here in the future
+                }
+            });
+        }
+
+        function showCreateChannelModal() {
+            document.getElementById('create-channel-modal').classList.remove('hidden');
+        }
+
+        function closeCreateChannelModal() {
+            document.getElementById('create-channel-modal').classList.add('hidden');
+            document.getElementById('new-channel-name').value = '';
+        }
+
+        function handleCreateChannel() {
+            const name = document.getElementById('new-channel-name').value;
+            const permission = document.querySelector('input[name="channel-permission"]:checked').value;
+
+            if (!name.trim()) {
+                alert('Please enter a channel name.');
+                return;
+            }
+
+            fetch(`${API_BASE_URL}/api/lounge/${currentLoungeId}/channels`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiToken}` },
+                body: JSON.stringify({ name: name, permission_level: permission })
+            })
+            .then(response => response.json().then(data => ({ status: response.status, body: data })))
+            .then(({ status, body }) => {
+                if (status === 201) {
+                    closeCreateChannelModal();
+                    // Refresh the entire lounge view to show the new channel
+                    showLounge(currentLoungeId, document.getElementById('lounge-header-title').textContent);
+                } else {
+                    alert('Error: ' + body.error);
+                }
             });
         }
 
@@ -4809,29 +5014,46 @@
             .then(lounges => {
                 allLoungesData = lounges;
                 const row = document.getElementById('lounge-list-row');
-                row.innerHTML = ''; // Clear previous items
+                row.innerHTML = '';
 
-                // "Create Lounge" card
                 const createCard = document.createElement('div');
                 createCard.className = 'circuit-card create-circuit-card';
-                createCard.onclick = () => showPage('create-lounge-page');
+                createCard.onclick = () => showCreateLoungePage(); // Use the new setup function
                 createCard.innerHTML = `<h4>+</h4><p>New Lounge</p>`;
                 row.appendChild(createCard);
 
-                // Cards for each existing lounge
-                lounges.forEach(lounge => {
+                lounges.slice(0, 7).forEach(lounge => {
                     const card = document.createElement('div');
-                    card.className = 'circuit-card no-image'; // Using no-image style for simplicity
+                    card.className = 'circuit-card';
                     card.onclick = () => showLounge(lounge.id, lounge.name);
+                    
+                    // --- NEW LOGIC for cover image and privacy icon ---
+                    if (lounge.cover_image) {
+                        card.style.backgroundImage = `url(${lounge.cover_image})`;
+                    } else {
+                        card.classList.add('no-image');
+                    }
+
+                    let privacyIcon = '';
+                    if (lounge.privacy === 'private') {
+                        privacyIcon = '<i class="fas fa-lock" style="position: absolute; top: 10px; right: 10px; color: white; text-shadow: 1px 1px 2px black; font-size: 0.8em;"></i>';
+                    } else if (lounge.privacy === 'unlisted') {
+                        privacyIcon = '<i class="fas fa-link" style="position: absolute; top: 10px; right: 10px; color: white; text-shadow: 1px 1px 2px black; font-size: 0.8em;"></i>';
+                    }
+                    
                     card.innerHTML = `
                         <h4>${lounge.name}</h4>
                         <p>${lounge.description.substring(0, 20)}...</p>
+                        ${privacyIcon}
                     `;
+                    // --- END OF NEW LOGIC ---
+
                     row.appendChild(card);
                 });
             })
             .catch(error => console.error("Error fetching lounges:", error));
         }
+
 
         function linkifyUsernames(text) {
             if (!text) return '';
@@ -4849,6 +5071,9 @@
         function handleCreateLounge() {
             const name = document.getElementById('loungeName').value.trim();
             const description = document.getElementById('loungeDescription').value.trim();
+            // --- GET NEW VALUES ---
+            const privacy = document.querySelector('input[name="loungePrivacy"]:checked').value;
+            const coverImage = newLoungeCoverUrl;
 
             if (!name) {
                 alert('Please enter a name for the lounge.');
@@ -4861,7 +5086,13 @@
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${apiToken}`
                 },
-                body: JSON.stringify({ name: name, description: description })
+                // --- SEND NEW VALUES ---
+                body: JSON.stringify({ 
+                    name: name, 
+                    description: description,
+                    privacy: privacy,
+                    coverImage: coverImage
+                })
             })
             .then(response => response.json().then(data => ({ status: response.status, body: data })))
             .then(({ status, body }) => {
@@ -4876,24 +5107,33 @@
 
         function renderLoungeChannels(channels) {
             const list = document.getElementById('lounge-channels-list');
+            const categoryHeader = document.querySelector('.lounge-channel-category');
             list.innerHTML = '';
+
+            // --- NEW: Add the "+" button for mods/owners ---
+            if (currentUserLoungeRole === 'owner' || currentUserLoungeRole === 'moderator') {
+                categoryHeader.innerHTML = 'Chats <i class="fas fa-plus" style="cursor: pointer; float: right;" onclick="showCreateChannelModal()"></i>';
+            } else {
+                categoryHeader.textContent = 'Chats';
+            }
+            // --- END NEW ---
+
             channels.forEach(channel => {
                 const li = document.createElement('li');
                 li.className = 'lounge-channel-item';
                 li.id = `channel-item-${channel.id}`;
-
-                // --- THE FIX ---
-                // The click event is now on the entire list item (li).
-                li.onclick = () => loadLoungeChannel(channel.id, channel.name);
-                // --- END OF FIX ---
+                li.onclick = () => loadLoungeChannel(channel.id, channel.name, channel.permission_level);
 
                 const channelNameSpan = document.createElement('span');
-                channelNameSpan.textContent = `# ${channel.name}`;
-                // The onclick event was removed from here.
+                let icon = '';
+                if (channel.permission_level === 'mods_only_chat') {
+                    icon = '<i class="fas fa-lock" style="margin-right: 8px; color: #888;"></i>';
+                } else if (channel.permission_level === 'mods_only_view') {
+                    icon = '<i class="fas fa-user-shield" style="margin-right: 8px; color: #888;"></i>';
+                }
+                channelNameSpan.innerHTML = `${icon}# ${channel.name}`;
                 li.appendChild(channelNameSpan);
-
-                // This part for the menu button remains the same.
-                // It uses event.stopPropagation() so clicking it won't trigger the li's click event.
+                
                 const menuBtn = document.createElement('i');
                 menuBtn.className = 'fas fa-ellipsis-v channel-options-btn';
                 menuBtn.onclick = (event) => openChannelContextMenu(event, channel.id, channel.name);
@@ -4903,15 +5143,11 @@
             });
         }
 
-        function loadLoungeChannel(channelId, channelName) {
-            // Leave the previous channel room if we were in one
+        function loadLoungeChannel(channelId, channelName, permissionLevel) {
             if (currentLoungeChannelId && socket) {
                 socket.emit('leave_lounge_channel', { channel_id: currentLoungeChannelId });
             }
-
             currentLoungeChannelId = channelId;
-
-            // Join the new channel room on the server
             if (socket) {
                 socket.emit('join_lounge_channel', { channel_id: currentLoungeChannelId });
             }
@@ -4919,18 +5155,28 @@
             // Update UI
             document.querySelectorAll('.lounge-channel-item').forEach(item => item.classList.remove('active'));
             document.getElementById(`channel-item-${channelId}`).classList.add('active');
-            document.getElementById('lounge-input-field').placeholder = `Message in #${channelName}`;
+            const inputField = document.getElementById('lounge-input-field');
+            inputField.placeholder = `Message in #${channelName}`;
+
+            // --- NEW: Disable input based on permissions ---
+            if (permissionLevel === 'mods_only_chat' && currentUserLoungeRole === 'member') {
+                inputField.disabled = true;
+                inputField.placeholder = 'Only moderators can send messages here.';
+            } else {
+                inputField.disabled = false;
+            }
+            // --- END NEW ---
+
             const chatBody = document.getElementById('lounge-body');
             chatBody.innerHTML = '<p style="text-align:center; color:#888;">Loading history...</p>';
 
-            // Fetch messages for this specific channel
             fetch(`${API_BASE_URL}/api/lounge/channel/${channelId}/messages`, {
                 headers: { 'Authorization': `Bearer ${apiToken}` }
             })
             .then(response => response.json())
             .then(messages => {
-                currentLoungeMessages = messages; // Store the history
-                renderLoungeMessages(currentLoungeMessages); // Render all at once
+                currentLoungeMessages = messages;
+                renderLoungeMessages(currentLoungeMessages);
             });
         }
 
@@ -4938,34 +5184,30 @@
         function handleLoungeImageUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
-
-            processImage(file) // We can reuse the existing processImage function!
+            processImage(file)
                 .then(base64Image => {
-                    sendLoungeMessage({ image: base64Image });
+                    showImagePreview(base64Image, 'lounge'); // Show Lounge preview
                 })
-                .catch(err => {
-                    console.error("Lounge image processing failed:", err);
-                    alert("Could not process image.");
-                });
+                .catch(err => console.error("Lounge image processing failed:", err));
             event.target.value = null;
         }
 
         // Replace your existing sendLoungeMessage function
-        function sendLoungeMessage(payload) {
-            const text = (payload.text || "").trim();
-            const image = payload.image;
+        function sendLoungeMessage() {
             const inputField = document.getElementById('lounge-input-field');
+            const text = inputField.value.trim();
+            const image = loungeImagePreviewUrl; // Get the image from our preview state
 
             if ((!text && !image) || !currentLoungeChannelId) return;
 
-            // This correctly sends the channel_id to the server
             socket.emit('send_lounge_message', {
                 text: text,
                 image: image,
                 channel_id: currentLoungeChannelId
             });
 
-            if (text) inputField.value = '';
+            inputField.value = ''; // Clear the input field
+            removeImagePreview('lounge'); // Clean up the preview UI
         }
         let currentLoungeChannelId = null;
 
@@ -4984,6 +5226,7 @@
             document.getElementById('lounge-body').innerHTML = '';
 
             showPage('lounge-page');
+            initializeLoungeEmojiPicker();
 
             fetch(`${API_BASE_URL}/api/lounge/${loungeId}/channels`, {
                 headers: { 'Authorization': `Bearer ${apiToken}` }
@@ -5168,6 +5411,42 @@
             } else if (pageId === 'create-article-page') { // <--- THIS IS THE FIX
                 initializeQuillEditor();                  // This line was missing
             }
+        }
+
+        function showCreateLoungePage() {
+            // Clear the form fields
+            document.getElementById('loungeName').value = '';
+            document.getElementById('loungeDescription').value = '';
+            document.getElementById('loungeCoverInput').value = null; // Clear file input
+            document.getElementById('privacyPublic').checked = true; // Default to public
+
+            const preview = document.getElementById('loungeCoverPreview');
+            preview.style.backgroundImage = 'none';
+            preview.innerHTML = '<span>+ Upload Image</span>';
+
+            // Reset the temporary URL
+            newLoungeCoverUrl = '';
+
+            // Add click listener to the preview to trigger the file input
+            preview.onclick = () => document.getElementById('loungeCoverInput').click();
+
+            // Add change listener to the file input to handle the upload
+            document.getElementById('loungeCoverInput').onchange = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const imageUrl = e.target.result;
+                    // Show the preview and store the URL
+                    preview.style.backgroundImage = `url(${imageUrl})`;
+                    preview.innerHTML = ''; // Remove the "+ Upload" text
+                    newLoungeCoverUrl = imageUrl;
+                };
+                reader.readAsDataURL(file);
+            };
+
+            showPage('create-lounge-page');
         }
 
         function handleLogout() {
@@ -5521,12 +5800,13 @@
             const profileList = document.getElementById('profile-list');
             profileList.innerHTML = '';
 
-            Object.keys(profileData).forEach(key => {
-                // --- THIS IS THE FIX ---
-                // This now checks for "me", the system user, AND your own username
-                if (key === 'me' || key === 'ANNOUNCEMENTS' || key === profileData.me.username) return;
-                // --- END OF FIX ---
+            // Filter out 'me', system accounts, and your own username from the list
+            const userKeys = Object.keys(profileData).filter(key =>
+                key !== 'me' && key !== 'ANNOUNCEMENTS' && key !== profileData.me.username
+            );
 
+            // Now, slice the filtered list to get the first 7 users
+            userKeys.slice(0, 7).forEach(key => {
                 const user = profileData[key];
                 if (!user || !user.name) return;
 
@@ -5546,6 +5826,115 @@
 
                 profileList.appendChild(profileItem);
                 updateProfilePictures(key);
+            });
+        }
+
+        function showInviteUserModal() {
+            const modal = document.getElementById('invite-lounge-member-modal');
+            const userList = document.getElementById('invite-user-list');
+            const searchInput = document.getElementById('invite-user-search');
+            const sendBtn = document.getElementById('send-invite-btn');
+
+            // Reset the modal to its initial state
+            modal.classList.remove('hidden');
+            sendBtn.disabled = true;
+            searchInput.value = '';
+            userList.innerHTML = '<li>Loading users...</li>';
+
+            // Fetch both all users and the current lounge members at the same time
+            Promise.all([
+                fetch(`${API_BASE_URL}/api/users/for-chat`, { headers: { 'Authorization': `Bearer ${apiToken}` } }).then(res => res.json()),
+                fetch(`${API_BASE_URL}/api/lounge/${currentLoungeId}/members`, { headers: { 'Authorization': `Bearer ${apiToken}` } }).then(res => res.json())
+            ]).then(([allUsers, currentMembers]) => {
+                
+                // Create a list of users who are NOT already in the lounge
+                const memberUsernames = new Set(currentMembers.map(m => m.username));
+                const potentialInvitees = allUsers.filter(u => !memberUsernames.has(u.username));
+
+                // This function will render the list based on the search filter
+                const renderUserList = (filter = '') => {
+                    userList.innerHTML = '';
+                    const lowercasedFilter = filter.toLowerCase();
+                    const filteredUsers = potentialInvitees.filter(u =>
+                        u.fullName.toLowerCase().includes(lowercasedFilter) || u.username.toLowerCase().includes(lowercasedFilter)
+                    );
+
+                    if (filteredUsers.length === 0) {
+                        userList.innerHTML = '<li>No users found.</li>';
+                        return;
+                    }
+
+                    // Display the filtered list
+                    filteredUsers.slice(0, 50).forEach(user => { // Show up to 50 results
+                        const li = document.createElement('li');
+                        // We use the exact same HTML structure as the "New Chat" modal
+                        li.innerHTML = `
+                            <label class="new-chat-list-item">
+                                <input type="radio" name="invite-recipient" value="${user.username}">
+                                <div class="profile-pic" data-user-pic-id="${user.username}"></div>
+                                <div class="user-info">
+                                    <span class="username">${user.fullName}</span>
+                                    <span class="fullname" style="color: #888;">@${user.username}</span>
+                                </div>
+                            </label>
+                        `;
+                        userList.appendChild(li);
+                        updateProfilePictures(user.username);
+                    });
+                };
+
+                // Attach event listeners for live search and button enabling
+                searchInput.onkeyup = () => renderUserList(searchInput.value);
+                userList.onchange = () => sendBtn.disabled = false;
+
+                // Perform the initial render of the user list
+                renderUserList();
+
+            }).catch(error => {
+                console.error("Failed to load data for invite modal:", error);
+                userList.innerHTML = '<li>Error loading users.</li>';
+            });
+        }
+
+        function closeInviteUserModal() {
+            document.getElementById('invite-lounge-member-modal').classList.add('hidden');
+        }
+
+        function handleSendLoungeInvite() {
+            const selectedRadio = document.querySelector('input[name="invite-recipient"]:checked');
+            if (!selectedRadio) return;
+
+            const username = selectedRadio.value;
+            fetch(`${API_BASE_URL}/api/lounge/${currentLoungeId}/invite`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiToken}` },
+                body: JSON.stringify({ username: username })
+            })
+            .then(response => response.json().then(data => ({ status: response.status, body: data })))
+            .then(({ status, body }) => {
+                if (status === 200) {
+                    alert(body.message);
+                    closeInviteUserModal();
+                } else {
+                    alert('Error: ' + body.error);
+                }
+            });
+        }
+
+        function respondToInvite(notificationId, action, buttonContainer) {
+            fetch(`${API_BASE_URL}/api/notification/${notificationId}/respond`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiToken}` },
+                body: JSON.stringify({ action: action })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.ok) {
+                    // Replace buttons with a confirmation message
+                    buttonContainer.innerHTML = `<p style="font-style: italic; color: #555;">Invitation ${action}ed.</p>`;
+                } else {
+                    alert('Error: ' + (data.error || 'Could not respond to invite.'));
+                }
             });
         }
 
@@ -5766,6 +6155,16 @@
                     renderChatMessages(true); // Re-render to show changes
                 }
             });
+            socket.on('lounge_message_updated', (data) => {
+                const msgToUpdate = currentLoungeMessages.find(m => m.id === data.message_id);
+                if (msgToUpdate) {
+                    if (data.reactions !== undefined) {
+                        msgToUpdate.reactions = data.reactions;
+                    }
+                    // Add other update types here in the future if needed (e.g., edit, delete)
+                    renderLoungeMessages(currentLoungeMessages, true); // Re-render with scroll preservation
+                }
+            });
         }
 
         function renderActiveChat() {
@@ -5856,17 +6255,11 @@
         function handleImageUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
-
             processImage(file)
                 .then(base64Image => {
-                    sendMessage({ image: base64Image });
+                    showImagePreview(base64Image, 'dm'); // Show DM preview
                 })
-                .catch(err => {
-                    console.error("Image processing failed:", err);
-                    alert("Could not process image. Please try a different one.");
-                });
-
-            // Clear the input value so the same file can be selected again
+                .catch(err => console.error("Image processing failed:", err));
             event.target.value = null;
         }
 
@@ -6120,6 +6513,66 @@
             });
         }
 
+        function initializeLoungeEmojiPicker() {
+            const emojiBtn = document.getElementById('lounge-emoji-btn');
+            const emojiPanel = document.getElementById('lounge-emoji-panel');
+            const messageInput = document.getElementById('lounge-input-field');
+            if (!emojiBtn || !emojiPanel || !messageInput) return;
+
+            emojiPanel.innerHTML = '';
+            EMOJI_LIST.forEach(emoji => {
+                const span = document.createElement('span');
+                span.textContent = emoji;
+                span.onclick = () => { messageInput.value += emoji; messageInput.focus(); };
+                emojiPanel.appendChild(span);
+            });
+
+            emojiBtn.onclick = (event) => { event.stopPropagation(); emojiPanel.classList.toggle('hidden'); };
+        }
+
+        function showLoungeReactionPicker(event, messageId) {
+            event.stopPropagation();
+            document.querySelectorAll('.reaction-picker').forEach(p => p.remove()); // Close others
+            const picker = document.createElement('div');
+            picker.className = 'reaction-picker';
+            ['👍', '❤️', '😂', '😮', '😢', '🙏'].forEach(emoji => {
+                const span = document.createElement('span');
+                span.textContent = emoji;
+                span.onclick = () => sendLoungeReaction(messageId, emoji);
+                picker.appendChild(span);
+            });
+            document.body.appendChild(picker);
+            const buttonRect = event.target.getBoundingClientRect();
+            picker.style.top = `${buttonRect.top + window.scrollY - picker.offsetHeight - 10}px`;
+            picker.style.left = `${buttonRect.left + window.scrollX + (buttonRect.width / 2) - (picker.offsetWidth / 2)}px`;
+        }
+
+        function sendLoungeReaction(messageId, emoji) {
+            socket.emit('react_to_lounge_message', { message_id: messageId, emoji: emoji });
+            document.querySelectorAll('.reaction-picker').forEach(p => p.remove());
+        }
+
+        function showLoungeReactionTooltip(event, messageId, emoji) {
+            // This logic can be shared with DMs, but we point to the lounge API endpoint
+            hideReactionTooltip();
+            reactionTooltipTimer = setTimeout(() => {
+                fetch(`${API_BASE_URL}/api/lounge/message/${messageId}/reaction/${encodeURIComponent(emoji)}`, {
+                    headers: { 'Authorization': `Bearer ${apiToken}` }
+                })
+                .then(response => response.json())
+                .then(usernames => {
+                    if (usernames.length === 0) return;
+                    const tooltip = document.createElement('div');
+                    tooltip.id = 'reaction-tooltip';
+                    tooltip.textContent = usernames.join(', ');
+                    // Positioning logic... (reusing from existing tooltip logic)
+                    document.body.appendChild(tooltip);
+                    tooltip.style.left = `${event.pageX - tooltip.offsetWidth / 2}px`;
+                    tooltip.style.top = `${event.pageY - tooltip.offsetHeight - 5}px`;
+                });
+            }, 500);
+        }
+
         function toggleFollow(button, username) {
             const isFollowing = followingList.includes(username);
             const endpoint = isFollowing ? 'unfollow' : 'follow';
@@ -6283,7 +6736,7 @@
          */
         function renderNotifications(notifications) {
             const list = document.getElementById('notifications-list');
-            list.innerHTML = ''; // Clear the list first
+            list.innerHTML = '';
 
             if (!notifications || notifications.length === 0) {
                 list.innerHTML = '<li>No new notifications.</li>';
@@ -6293,31 +6746,41 @@
             notifications.forEach(notif => {
                 const item = document.createElement('li');
                 item.className = 'notification-item';
-
-                // Apply our 'unread' style if the notification hasn't been read
                 if (!notif.is_read) {
                     item.classList.add('unread');
                 }
 
-                // Set the correct click action based on the notification type
                 if (notif.reference_type === 'post' && notif.reference_details) {
                     item.onclick = () => navigateToPost(notif.reference_details);
                 } else if (notif.actor_username) {
                     item.onclick = () => showProfile(notif.actor_username);
                 }
 
-                // Format the message with bold text for usernames/titles
                 const messageHtml = notif.message.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                
+                // --- NEW: Add buttons for actionable invites ---
+                let actionButtons = '';
+                if (notif.actionable) {
+                    actionButtons = `
+                        <div class="notification-actions" style="margin-top: 10px; display: flex; gap: 10px;">
+                            <button class="login-btn" style="padding: 5px 10px;" onclick="event.stopPropagation(); respondToInvite(${notif.id}, 'accept', this.parentElement)">Accept</button>
+                            <button class="login-btn" style="background: #888;" onclick="event.stopPropagation(); respondToInvite(${notif.id}, 'decline', this.parentElement)">Decline</button>
+                        </div>`;
+                } else if (notif.event_type === 'lounge_invite' && notif.status !== 'pending') {
+                    actionButtons = `<p style="font-style: italic; color: #555; margin-top: 10px;">Invitation ${notif.status}.</p>`;
+                }
+                // --- END NEW ---
+
                 item.innerHTML = `
                     <div class="profile-pic" data-user-pic-id="${notif.actor_username}"></div>
                     <div class="notification-text">
                         <p>${messageHtml}</p>
                         <span class="message-timestamp">${formatTimestamp(new Date(notif.timestamp))}</span>
+                        ${actionButtons}
                     </div>
                 `;
                 list.appendChild(item);
 
-                // Ensure the actor's profile picture is up to date
                 if (notif.actor_username) {
                     updateProfilePictures(notif.actor_username);
                 }
@@ -6394,32 +6857,28 @@
 
         // In html.html, replace BOTH old sendMessage functions with this one
 
-        function sendMessage(payload) {
-            const text = (payload.text || "").trim();
-            const image = payload.image;
-            if (!currentChatRecipient || (!text && !image)) return;
+        
+        function sendMessage() {
             const inputField = document.getElementById('main-chat-input-field');
-
-            // --- THIS IS THE FIX (PART 1) ---
-            // First, add the message to our local history for an instant UI update.
-            // We add a temporary ID so we can find it later.
+            const text = inputField.value.trim();
+            const image = dmImagePreviewUrl; // Get the image from our preview state
+            
+            if (!currentChatRecipient || (!text && !image)) return;
+            
             const tempId = `temp_${Date.now()}`;
-            if (!messageHistory[currentChatRecipient]) {
-                messageHistory[currentChatRecipient] = [];
-            }
-            messageHistory[currentChatRecipient].push({
-                id: tempId, // Use the temporary ID
-                sender: 'me',
-                text: text,
-                image: image,
-                time: new Date()
-            });
-            if (text) inputField.value = '';
-            renderChatMessages(); // Render the message instantly
+            
+            // Optimistic UI update
+            if (!messageHistory[currentChatRecipient]) messageHistory[currentChatRecipient] = [];
+            messageHistory[currentChatRecipient].push({ id: tempId, sender: 'me', text: text, image: image, time: new Date() });
+            
+            inputField.value = ''; // Clear the input field
+            renderChatMessages();
+            removeImagePreview('dm'); // Clean up the preview UI
+            
             profileData[currentChatRecipient].lastMessage = text ? `You: ${text}` : 'You sent an image.';
             renderChatList();
-            // --- END OF FIX (PART 1) ---
 
+            // Send the complete data to the server
             fetch(`${API_BASE_URL}/api/dm/send`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiToken}` },
@@ -6428,25 +6887,17 @@
             .then(response => response.json())
             .then(data => {
                 if (data.ok) {
-                    // --- THIS IS THE FIX (PART 2) ---
-                    // Now, find the message we just sent using its temporary ID
-                    // and update it with the real ID from the server.
                     const sentMessage = messageHistory[currentChatRecipient].find(m => m.id === tempId);
-                    if (sentMessage) {
-                        sentMessage.id = data.dm_id; // Update with the real ID
-                    }
-                    // Re-render just in case, to update the message element's ID
+                    if (sentMessage) sentMessage.id = data.dm_id;
                     renderChatMessages(true);
-                    // --- END OF FIX (PART 2) ---
                 } else {
                     alert('Error: ' + (data.error || 'Could not send message.'));
-                    // Optional: Remove the failed message from history
                     messageHistory[currentChatRecipient] = messageHistory[currentChatRecipient].filter(m => m.id !== tempId);
                     renderChatMessages();
                 }
-            })
-            .catch(error => console.error("Send message error:", error));
+            });
         }
+
 
 
         // This is the one and only RENDERCHATLIST function.
@@ -6566,19 +7017,38 @@
                     const grid = document.getElementById('all-lounges-grid');
                     grid.innerHTML = '';
 
-                    // "Create Lounge" card
                     const createCard = document.createElement('div');
                     createCard.className = 'circuit-card create-circuit-card';
-                    createCard.onclick = () => showPage('create-lounge-page');
+                    createCard.onclick = () => showCreateLoungePage(); // Use new setup function
                     createCard.innerHTML = `<h4>+</h4><p>New Lounge</p>`;
                     grid.appendChild(createCard);
 
-                    // All other lounges
                     lounges.forEach(lounge => {
                         const card = document.createElement('div');
-                        card.className = 'circuit-card no-image';
+                        card.className = 'circuit-card';
                         card.onclick = () => showLounge(lounge.id, lounge.name);
-                        card.innerHTML = `<h4>${lounge.name}</h4><p>${lounge.description}</p>`;
+                        
+                        // --- NEW LOGIC for cover image and privacy icon ---
+                        if (lounge.cover_image) {
+                            card.style.backgroundImage = `url(${lounge.cover_image})`;
+                        } else {
+                            card.classList.add('no-image');
+                        }
+
+                        let privacyIcon = '';
+                        if (lounge.privacy === 'private') {
+                            privacyIcon = '<i class="fas fa-lock" style="position: absolute; top: 10px; right: 10px; color: white; text-shadow: 1px 1px 2px black; font-size: 0.8em;"></i>';
+                        } else if (lounge.privacy === 'unlisted') {
+                            privacyIcon = '<i class="fas fa-link" style="position: absolute; top: 10px; right: 10px; color: white; text-shadow: 1px 1px 2px black; font-size: 0.8em;"></i>';
+                        }
+                        
+                        card.innerHTML = `
+                            <h4>${lounge.name}</h4>
+                            <p>${lounge.description}</p>
+                            ${privacyIcon}
+                        `;
+                        // --- END OF NEW LOGIC ---
+
                         grid.appendChild(card);
                     });
                 });
@@ -7065,8 +7535,7 @@
                 }
             })
             .catch(error => {
-                co
-nsole.error("Error creating circuit:", error);
+                console.error("Error creating circuit:", error);
                 alert("An error occurred. Please try again.");
             });
         }
@@ -7121,7 +7590,7 @@ nsole.error("Error creating circuit:", error);
             row.appendChild(createCard);
 
             // Then the other circuits with truncated text
-            circuits.forEach(circuit => {
+            circuits.slice(0, 7).forEach(circuit => {
                 const card = document.createElement('div');
                 card.className = 'circuit-card';
                 card.onclick = () => showCircuit(circuit.id, circuit.title, circuit.hostSchool);
@@ -7253,6 +7722,15 @@ nsole.error("Error creating circuit:", error);
         }
 
 
+        function viewProfileFromLounge(username) {
+            // First, close all open menus and modals
+            document.querySelectorAll('.context-menu').forEach(menu => menu.remove());
+            closeLoungeMembersModal();
+            // Then, show the profile page
+            showProfile(username);
+        }
+
+
         function editLoungeChannel(channelId) {
             const newName = prompt("Enter the new channel name:");
             if (!newName || !newName.trim()) return;
@@ -7267,6 +7745,58 @@ nsole.error("Error creating circuit:", error);
                 if (data.ok) {
                     // Refresh the channels list to show the new name
                     showLounge(currentLoungeId, document.getElementById('lounge-header-title').textContent);
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            });
+        }
+
+        function openLoungeMemberMenu(event, username, currentRole) {
+            event.preventDefault(); 
+            event.stopPropagation();
+            document.querySelectorAll('.context-menu').forEach(menu => menu.remove());
+
+            const menu = document.createElement('div');
+            menu.className = 'context-menu';
+            
+            // --- THIS IS THE FIX ---
+            // We now call a new function that handles closing the other modals
+            // before showing the profile.
+            let menuItems = `<a class="context-menu-item" onclick="viewProfileFromLounge('${username}')">View Profile</a>`;
+            // --- END OF FIX ---
+
+            const canManage = (currentUserLoungeRole === 'owner') || (currentUserLoungeRole === 'moderator' && currentRole === 'member');
+            
+            if (canManage && currentRole !== 'owner') {
+                menuItems += '<hr style="margin: 5px 0; border-color: #eee;">';
+                if (currentRole === 'member') {
+                    menuItems += `<a class="context-menu-item" onclick="setLoungeRole('${username}', 'moderator')">Promote to Moderator</a>`;
+                } else if (currentRole === 'moderator') {
+                    menuItems += `<a class="context-menu-item" onclick="setLoungeRole('${username}', 'member')">Demote to Member</a>`;
+                }
+            }
+            
+            menu.innerHTML = menuItems;
+            document.body.appendChild(menu);
+
+            menu.style.left = `${event.pageX}px`;
+            menu.style.top = `${event.pageY}px`;
+        }
+
+        function setLoungeRole(username, newRole) {
+            document.querySelectorAll('.context-menu').forEach(menu => menu.remove()); // Close menu
+
+            fetch(`${API_BASE_URL}/api/lounge/${currentLoungeId}/member/${username}/role`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiToken}` },
+                body: JSON.stringify({ role: newRole })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.ok) {
+                    alert(data.message);
+                    // Refresh the members list to show the new role
+                    showLoungeMembers();
                 } else {
                     alert('Error: ' + data.error);
                 }
@@ -7318,100 +7848,104 @@ nsole.error("Error creating circuit:", error);
         function renderLoungeMessages(messages, preserveScroll = false) {
             const chatBody = document.getElementById('lounge-body');
             const currentScrollPosition = chatBody.scrollTop;
-            chatBody.innerHTML = ''; // Clear the body before rendering
+            chatBody.innerHTML = '';
 
             messages.forEach((msg, index) => {
                 const prevMsg = messages[index - 1];
-                
-                // --- Grouping Logic ---
-                // A new group starts if:
-                // 1. It's the first message.
-                // 2. The sender is different from the previous one.
-                // 3. More than 3 minutes have passed since the last message.
-                const isNewGroup = !prevMsg || 
-                                msg.author.username !== prevMsg.author.username ||
-                                ((new Date(msg.timestamp) - new Date(prevMsg.timestamp)) / (1000 * 60) > 3);
-
+                const isNewGroup = !prevMsg || msg.author.username !== prevMsg.author.username || ((new Date(msg.timestamp) - new Date(prevMsg.timestamp)) / (1000 * 60) > 3);
                 const isSentByMe = msg.author.username === profileData.me.username;
                 const senderClass = isSentByMe ? 'sent' : 'received';
 
                 const msgEl = document.createElement('div');
                 msgEl.className = `chat-message ${senderClass} ${isNewGroup ? 'new-group' : ''}`;
 
-                // Create the row that holds the picture and the bubble
                 const messageRow = document.createElement('div');
                 messageRow.className = 'message-row';
 
-                // Add profile picture ONLY for the first message of a received group
+                // Add spacer/profile pic
                 if (isNewGroup && !isSentByMe) {
                     const pic = document.createElement('div');
                     pic.className = 'profile-pic';
+                    pic.style.cursor = 'pointer';
                     pic.setAttribute('data-user-pic-id', msg.author.username);
+                    pic.setAttribute('onclick', `showProfile('${msg.author.username}')`);
                     messageRow.appendChild(pic);
                     updateProfilePictures(msg.author.username);
-                } 
-                // --- ADD THIS BLOCK ---
-                else if (!isSentByMe) {
-                    // For other received messages, add an invisible spacer to align them
+                } else if (!isSentByMe) {
                     const spacer = document.createElement('div');
                     spacer.className = 'profile-pic-spacer';
                     messageRow.appendChild(spacer);
                 }
 
-                let messageContent = '';
-                if (msg.image) {
-                    messageContent = `<img src="${msg.image}" alt="Lounge image">`;
-                }
-                if (msg.text) {
-                    messageContent += `<p>${linkifyUsernames(msg.text)}</p>`;
-                }
-                
-                // Add author name for the first message of a received group
-                let authorHtml = '';
-                if (isNewGroup && !isSentByMe) {
-                    const authorName = msg.author.fullName || msg.author.username;
-                    authorHtml = `<span class="message-author">${authorName} ${getRankIcon(msg.author.rank)}</span>`;
-                }
-                
-                // The bubble container now wraps the author name and the content
                 const bubbleContainer = document.createElement('div');
                 bubbleContainer.className = 'bubble-container';
+                
+                let messageContent = '';
+                if (msg.image) messageContent += `<img src="${msg.image}" alt="Lounge image">`;
+                if (msg.text) messageContent += `<p>${linkifyUsernames(msg.text)}</p>`;
+                
+                let authorHtml = '';
+                if (isNewGroup && !isSentByMe) {
+                    authorHtml = `<span class="message-author">${msg.author.fullName || msg.author.username} ${getRankIcon(msg.author.rank)}</span>`;
+                }
                 bubbleContainer.innerHTML = authorHtml + messageContent;
 
-                // A wrapper for layout purposes
                 const textContentWrapper = document.createElement('div');
                 textContentWrapper.className = 'text-content-wrapper';
                 textContentWrapper.appendChild(bubbleContainer);
                 messageRow.appendChild(textContentWrapper);
                 
+                // --- NEW: Message Actions (React button) ---
+                const actionsContainer = document.createElement('div');
+                actionsContainer.className = 'message-actions';
+                const reactBtn = document.createElement('button');
+                reactBtn.className = 'action-btn';
+                reactBtn.innerHTML = `<i class="fas fa-smile"></i>`;
+                reactBtn.onclick = (event) => showLoungeReactionPicker(event, msg.id);
+                actionsContainer.appendChild(reactBtn);
+                messageRow.appendChild(actionsContainer);
+                // --- END NEW ---
+                
                 msgEl.appendChild(messageRow);
 
-                // Add timestamp for the LAST message in a group
-                const nextMsg = messages[index + 1];
-                const isLastInGroup = !nextMsg ||
-                                    msg.author.username !== nextMsg.author.username ||
-                                    ((new Date(nextMsg.timestamp) - new Date(msg.timestamp)) / (1000 * 60) > 3);
+                const metaContainer = document.createElement('div');
+                metaContainer.className = 'message-meta';
 
+                // --- NEW: Reaction Rendering ---
+                if (msg.reactions && Object.keys(msg.reactions).length > 0) {
+                    const reactionsDiv = document.createElement('div');
+                    reactionsDiv.style.display = 'flex';
+                    reactionsDiv.style.gap = '4px';
+                    for (const [emoji, count] of Object.entries(msg.reactions)) {
+                        const reactionEl = document.createElement('div');
+                        reactionEl.className = 'message-reaction';
+                        reactionEl.textContent = `${emoji} ${count > 1 ? count : ''}`.trim();
+                        reactionEl.onclick = () => sendLoungeReaction(msg.id, emoji);
+                        reactionEl.onmouseover = (event) => showLoungeReactionTooltip(event, msg.id, emoji);
+                        reactionEl.onmouseout = hideReactionTooltip;
+                        reactionsDiv.appendChild(reactionEl);
+                    }
+                    metaContainer.appendChild(reactionsDiv);
+                }
+                // --- END NEW ---
+
+                const isLastInGroup = !messages[index + 1] || msg.author.username !== messages[index + 1].author.username || ((new Date(messages[index + 1].timestamp) - new Date(msg.timestamp)) / (1000 * 60) > 3);
                 if (isLastInGroup) {
-                    const metaContainer = document.createElement('div');
-                    metaContainer.className = 'message-meta';
                     const timestampEl = document.createElement('span');
                     timestampEl.className = 'message-timestamp';
                     timestampEl.dataset.timestamp = new Date(msg.timestamp).toISOString();
                     timestampEl.textContent = formatTimestamp(new Date(msg.timestamp));
                     metaContainer.appendChild(timestampEl);
-                    msgEl.appendChild(metaContainer);
                 }
 
+                if (metaContainer.hasChildNodes()) {
+                    msgEl.appendChild(metaContainer);
+                }
                 chatBody.appendChild(msgEl);
             });
             
-            // Logic to scroll to the bottom
-            if (preserveScroll) {
-                chatBody.scrollTop = currentScrollPosition;
-            } else {
-                chatBody.scrollTop = chatBody.scrollHeight;
-            }
+            if (preserveScroll) chatBody.scrollTop = currentScrollPosition;
+            else chatBody.scrollTop = chatBody.scrollHeight;
         }
 
 
@@ -7552,6 +8086,39 @@ nsole.error("Error creating circuit:", error);
             document.getElementById('lounge-menu-dropdown').classList.toggle('hidden');
         }
 
+        function showImagePreview(base64Url, type) {
+            const isDM = type === 'dm';
+            const container = document.getElementById(isDM ? 'dm-image-preview-container' : 'lounge-image-preview-container');
+            
+            if (isDM) {
+                dmImagePreviewUrl = base64Url;
+            } else {
+                loungeImagePreviewUrl = base64Url;
+            }
+
+            container.innerHTML = `
+                <div class="image-preview-box">
+                    <span class="remove-preview-btn" onclick="removeImagePreview('${type}')">&times;</span>
+                    <img src="${base64Url}" class="preview-image">
+                </div>
+            `;
+            container.classList.remove('hidden');
+        }
+
+        function removeImagePreview(type) {
+            const isDM = type === 'dm';
+            const container = document.getElementById(isDM ? 'dm-image-preview-container' : 'lounge-image-preview-container');
+
+            if (isDM) {
+                dmImagePreviewUrl = null;
+            } else {
+                loungeImagePreviewUrl = null;
+            }
+            
+            container.innerHTML = '';
+            container.classList.add('hidden');
+        }
+
         function openChannelContextMenu(event, channelId, channelName) {
             event.stopPropagation();
             // Close any existing context menus first
@@ -7589,26 +8156,44 @@ nsole.error("Error creating circuit:", error);
         function showLoungeMembers() {
             const modal = document.getElementById('lounge-members-modal');
             const list = document.getElementById('lounge-members-list');
+            const footer = document.getElementById('lounge-members-modal-footer'); // Get the new footer
+
+            // Clear any old button from the footer first
+            footer.innerHTML = '';
+            
+            // Show/hide footer and add button based on user's role
+            if (currentUserLoungeRole === 'owner' || currentUserLoungeRole === 'moderator') {
+                footer.style.display = 'block'; // Make the footer visible
+                const inviteBtn = document.createElement('button');
+                inviteBtn.textContent = 'Invite User';
+                inviteBtn.className = 'login-btn'; // Use the standard button class
+                inviteBtn.onclick = showInviteUserModal;
+                footer.appendChild(inviteBtn);
+            } else {
+                footer.style.display = 'none'; // Hide the footer if user can't invite
+            }
+
             modal.classList.remove('hidden');
             list.innerHTML = '<li>Loading members...</li>';
 
-            fetch(`${API_BASE_URL}/api/lounge/${currentLoungeId}/members`, {
-                headers: { 'Authorization': `Bearer ${apiToken}` }
-            })
+            fetch(`${API_BASE_URL}/api/lounge/${currentLoungeId}/members`, { headers: { 'Authorization': `Bearer ${apiToken}` } })
             .then(response => response.json())
             .then(members => {
                 list.innerHTML = '';
+                members.sort((a, b) => {
+                    const roleOrder = { 'owner': 0, 'moderator': 1, 'member': 2 };
+                    return roleOrder[a.role] - roleOrder[b.role];
+                });
+                
                 members.forEach(member => {
                     const li = document.createElement('li');
-                    li.className = 'following-list-item'; // Reusing existing styles
-                    li.onclick = () => {
-                        closeLoungeMembersModal();
-                        showProfile(member.username);
-                    };
+                    li.className = 'following-list-item';
+                    li.onclick = () => { closeLoungeMembersModal(); showProfile(member.username); };
+                    li.oncontextmenu = (event) => openLoungeMemberMenu(event, member.username, member.role);
                     li.innerHTML = `
                         <div class="profile-pic" data-user-pic-id="${member.username}"></div>
                         <div class="user-info">
-                            <span class="username">${member.fullName} (${member.role})</span>
+                            <span class="username">${member.fullName} <strong>(${member.role})</strong></span>
                             <span class="fullname">@${member.username}</span>
                         </div>`;
                     list.appendChild(li);
@@ -7616,6 +8201,7 @@ nsole.error("Error creating circuit:", error);
                 });
             });
         }
+
 
         function showLoungeDetails() {
             const loungeName = document.getElementById('lounge-header-title').textContent;
@@ -8335,6 +8921,8 @@ nsole.error("Error creating circuit:", error);
             </div>
             <ul id="lounge-members-list" class="following-list">
                 </ul>
+            <div id="lounge-members-modal-footer" style="padding: 15px; border-top: 1px solid #dbdbdb; text-align: center; display: none;">
+                </div>
         </div>
     </div>
 
@@ -8345,6 +8933,46 @@ nsole.error("Error creating circuit:", error);
                 <span class="close-following-modal" onclick="closeLoungeDetailsModal()">&times;</span>
             </div>
             <p id="lounge-details-modal-description" style="line-height: 1.6; margin-top: 15px;"></p>
+        </div>
+    </div>
+    <div id="create-channel-modal" class="following-modal hidden">
+        <div class="following-modal-content" style="max-width: 450px;">
+            <div class="following-modal-header">
+                <span>Create Channel</span>
+                <span class="close-following-modal" onclick="closeCreateChannelModal()">&times;</span>
+            </div>
+            <div style="padding: 20px;">
+                <label for="new-channel-name" style="font-weight: bold; display: block; margin-bottom: 10px;">CHANNEL NAME</label>
+                <input type="text" id="new-channel-name" placeholder="new-channel" style="width: 95%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
+
+                <label style="font-weight: bold; display: block; margin-top: 20px; margin-bottom: 10px;">PERMISSIONS</label>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <label><input type="radio" name="channel-permission" value="public" checked> Public (Everyone can view and chat)</label>
+                    <label><input type="radio" name="channel-permission" value="mods_only_chat"> Read-Only (Everyone can view, only mods can chat)</label>
+                    <label><input type="radio" name="channel-permission" value="mods_only_view"> Private (Only mods can view and chat)</label>
+                </div>
+            </div>
+            <div style="padding: 15px; border-top: 1px solid #dbdbdb; text-align: right;">
+                <button class="login-btn" onclick="handleCreateChannel()">Create</button>
+            </div>
+        </div>
+    </div>
+    <div id="invite-lounge-member-modal" class="following-modal hidden">
+        <div class="following-modal-content">
+            <div class="following-modal-header">
+                <span>Invite Member</span>
+                <span class="close-following-modal" onclick="closeInviteUserModal()">&times;</span>
+            </div>
+            <div style="padding: 10px 15px; border-bottom: 1px solid #dbdbdb;">
+                <input type="text" id="invite-user-search" placeholder="Search for a user..." class="input" style="width: 95%;">
+            </div>
+            <ul id="invite-user-list" class="following-list">
+                </ul>
+            <div style="padding: 15px; border-top: 1px solid #dbdbdb; text-align: right;">
+                <button id="send-invite-btn" class="login-btn" onclick="handleSendLoungeInvite()" disabled>
+                    Send Invite
+                </button>
+            </div>
         </div>
     </div>
     </body>
