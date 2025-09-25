@@ -894,7 +894,29 @@ def get_lounges():
     ]
     return jsonify(lounge_list)
 
+@app.post("/api/lounge/<int:lounge_id>/join")
+def join_lounge(lounge_id):
+    user = auth_user()
+    if not user: return jsonify({"error": "unauthorized"}), 401
 
+    lounge = Lounge.query.get(lounge_id)
+    if not lounge: return jsonify({"error": "Lounge not found"}), 404
+    
+    # Prevent users from joining private lounges without an invite
+    if lounge.privacy == 'private':
+        return jsonify({"error": "This lounge is private and requires an invitation to join."}), 403
+
+    # Check if the user is already a member
+    existing_membership = LoungeMember.query.filter_by(user_id=user.id, lounge_id=lounge.id).first()
+    if existing_membership:
+        return jsonify({"error": "You are already a member of this lounge."}), 409
+
+    # Add the user as a new member
+    new_membership = LoungeMember(user_id=user.id, lounge_id=lounge.id, role='member')
+    db.session.add(new_membership)
+    db.session.commit()
+    
+    return jsonify({"ok": True, "message": f"Welcome to {lounge.name}!"})
 
 @app.get("/api/lounge/<int:lounge_id>/channels")
 def get_lounge_channels(lounge_id):
@@ -906,20 +928,32 @@ def get_lounge_channels(lounge_id):
     
     user_role = get_lounge_role(user.id, lounge_id)
     
-    # --- NEW PRIVACY CHECK ---
-    if lounge.privacy in ['private', 'unlisted'] and not user_role:
-        return jsonify({"error": "Forbidden: You are not a member of this private lounge."}), 403
-    # --- END OF CHECK ---
+    # --- THIS IS THE KEY CHANGE ---
+    is_member = user_role is not None
+    # --- END CHANGE ---
+    
+    if lounge.privacy in ['private', 'unlisted'] and not is_member:
+        # For private lounges, if not a member, don't even return channels.
+        # For unlisted, we still want to show the 'join' page, so we return info.
+        if lounge.privacy == 'private':
+            return jsonify({"error": "Forbidden: You are not a member of this private lounge."}), 403
+        else: # Unlisted and not a member
+            return jsonify({
+                "channels": [],
+                "user_role": None,
+                "is_member": False # Explicitly state they are not a member
+            })
 
     query = LoungeChannel.query.filter_by(lounge_id=lounge.id)
-    if user_role not in ['owner', 'moderator']:
+    if not is_member or user_role not in ['owner', 'moderator']:
         query = query.filter(LoungeChannel.permission_level != 'mods_only_view')
     
     channels = query.order_by(LoungeChannel.id).all()
     
     return jsonify({
         "channels": [{"id": c.id, "name": c.name, "permission_level": c.permission_level} for c in channels],
-        "user_role": user_role
+        "user_role": user_role,
+        "is_member": is_member # <-- ADD THIS LINE
     })
 
 
