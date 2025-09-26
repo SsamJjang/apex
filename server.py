@@ -167,24 +167,25 @@ class LoungeChannel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     lounge_id = db.Column(db.Integer, db.ForeignKey('lounge.id'), nullable=False)
-    # --- ADD THIS LINE ---
-    permission_level = db.Column(db.String(50), default='public', nullable=False) # public, mods_only_chat, mods_only_view
+    permission_level = db.Column(db.String(50), default='public', nullable=False)
+    
+    # ▼▼▼ ADD THIS LINE ▼▼▼
+    is_main = db.Column(db.Boolean, default=False, nullable=False, index=True)
+
+    messages = db.relationship("LoungeMessage", backref="channel", cascade="all, delete-orphan")
 
 
 class LoungeMessage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     text = db.Column(db.Text, nullable=True)
     image = db.Column(db.Text, nullable=True)
-    # --- THIS IS THE FIX ---
-    # This explicitly saves the time in UTC, removing timezone confusion.
     timestamp = db.Column(db.DateTime, default=lambda: datetime.now(pytz.timezone('UTC')))
-    # --- END OF FIX ---
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     channel_id = db.Column(db.Integer, db.ForeignKey('lounge_channel.id'), nullable=False)
-
+    message_type = db.Column(db.String(50), default='user_message', nullable=False)
+    
+    reactions = db.relationship('LoungeMessageReaction', backref='message', cascade='all, delete-orphan')
     author = db.relationship("User", backref="lounge_messages")
-    # Add a relationship for easy access from message to its channel
-    channel = db.relationship("LoungeChannel", backref="messages")
 
 
 # In server.py
@@ -290,6 +291,26 @@ def is_users_birthday(dob_str: str) -> bool:
         # Handle cases where the DOB is not a valid date string
         return False
 
+@app.delete("/api/lounge/<int:lounge_id>")
+def delete_lounge(lounge_id):
+    user = auth_user()
+    if not user:
+        return jsonify({"error": "unauthorized"}), 401
+
+    lounge = Lounge.query.get(lounge_id)
+    if not lounge:
+        return jsonify({"error": "Lounge not found"}), 404
+
+    # --- PERMISSION CHECK: Only the owner can delete the lounge ---
+    if lounge.owner_id != user.id:
+        return jsonify({"error": "Forbidden: You are not the owner of this lounge."}), 403
+
+    # Thanks to the cascade settings, deleting the lounge will also delete
+    # its channels, members, messages, and reactions automatically.
+    db.session.delete(lounge)
+    db.session.commit()
+
+    return jsonify({"ok": True, "message": "Lounge has been permanently deleted."})
 
 def get_lounge_role(user_id, lounge_id):
     membership = LoungeMember.query.filter_by(user_id=user_id, lounge_id=lounge_id).first()
@@ -458,6 +479,47 @@ def get_article(article_id):
         "daily_views": views_today  # <-- ADDED THIS
     })
 
+@app.delete("/api/lounge/<int:lounge_id>/leave")
+def leave_lounge(lounge_id):
+    user = auth_user()
+    if not user: return jsonify({"error": "unauthorized"}), 401
+
+    membership = LoungeMember.query.filter_by(user_id=user.id, lounge_id=lounge_id).first()
+    if not membership:
+        return jsonify({"error": "You are not a member of this lounge."}), 404
+
+    if membership.role == 'owner':
+        return jsonify({"error": "Owners cannot leave a lounge. You must delete it instead."}), 403
+
+    db.session.delete(membership)
+
+    # --- THIS IS THE FIX ---
+    # Find the designated main channel to post the system message.
+    main_channel = LoungeChannel.query.filter_by(lounge_id=lounge_id, is_main=True).first()
+    
+    if main_channel:
+        system_message = LoungeMessage(
+            text=f"{user.username} left the lounge.",
+            user_id=user.id,
+            channel_id=main_channel.id, # Use the main channel's ID
+            message_type='system_event'
+        )
+        db.session.add(system_message)
+        db.session.commit()
+
+        message_payload = {
+            "id": system_message.id, "text": system_message.text, "image": None,
+            "timestamp": system_message.timestamp.isoformat(), "channel_id": main_channel.id,
+            "reactions": {}, "message_type": system_message.message_type,
+            "author": { "username": user.username, "fullName": user.full_name, "profilePic": user.profile_pic, "rank": user.rank }
+        }
+        socketio.emit('new_lounge_message', message_payload, room=f"channel_{main_channel.id}")
+    else:
+        # If no main channel, just commit the membership deletion
+        db.session.commit()
+    # --- END OF FIX ---
+
+    return jsonify({"ok": True, "message": "You have left the lounge."})
 
 @app.get("/api/dm/history/<username>")
 def get_dm_history(username):
@@ -482,6 +544,17 @@ def get_dm_history(username):
             (DM.sender_id == other_user.id) & (DM.receiver_id == user.id)
         )
     ).order_by(DM.created_at.asc()).all()
+
+    conversation_start_info = None
+    if messages:
+        first_message = messages[0]
+        starter_username = first_message.sender.username
+        starter_is_me = (starter_username == user.username)
+        conversation_start_info = {
+            "starter_name": "You" if starter_is_me else first_message.sender.full_name,
+            "timestamp": first_message.created_at.isoformat()
+        }
+    # --- ▲▲▲ END OF NEW LOGIC ▲▲
 
     # --- NEW: Efficiently fetch all reactions for this conversation ---
     message_ids = [msg.id for msg in messages]
@@ -780,19 +853,22 @@ def create_lounge():
     data = request.get_json(force=True)
     name = data.get("name", "").strip()
     description = data.get("description", "").strip()
-    # --- GET NEW FIELDS ---
     privacy = data.get("privacy", "public")
     cover_image_data_url = data.get("coverImage")
     processed_image_data = None
 
+    # --- NEW VALIDATION ---
     if not name:
         return jsonify({"error": "Lounge name is required"}), 400
-    if len(name) > 30:
-        return jsonify({"error": "Lounge name cannot exceed 30 characters"}), 400
+    if len(name) > 20:
+        return jsonify({"error": "Lounge name cannot exceed 20 characters"}), 400
+    if len(description) > 600:
+        return jsonify({"error": "Lounge description cannot exceed 600 characters"}), 400
+    # --- END VALIDATION ---
+
     if privacy not in ['public', 'private', 'unlisted']:
         return jsonify({"error": "Invalid privacy setting"}), 400
 
-    # --- ADD IMAGE PROCESSING LOGIC (similar to circuits) ---
     if cover_image_data_url and cover_image_data_url.startswith('data:image'):
         try:
             header, encoded = cover_image_data_url.split(",", 1)
@@ -811,7 +887,6 @@ def create_lounge():
         name=name,
         description=description,
         owner_id=user.id,
-        # --- SAVE NEW FIELDS ---
         privacy=privacy,
         cover_image=processed_image_data
     )
@@ -821,8 +896,9 @@ def create_lounge():
     owner_membership = LoungeMember(user_id=user.id, lounge_id=new_lounge.id, role='owner')
     db.session.add(owner_membership)
     
-    general_channel = LoungeChannel(name="general", lounge_id=new_lounge.id)
+    general_channel = LoungeChannel(name="general", lounge_id=new_lounge.id, is_main=True) # Set is_main to True
     random_channel = LoungeChannel(name="random", lounge_id=new_lounge.id)
+    
     db.session.add_all([general_channel, random_channel])
 
     db.session.commit()
@@ -834,6 +910,31 @@ def create_lounge():
     }), 201
 
 # In server.py, add this new endpoint
+
+@app.put("/api/lounge/channel/<int:channel_id>/set-main")
+def set_main_channel(channel_id):
+    user = auth_user()
+    if not user: return jsonify({"error": "unauthorized"}), 401
+
+    target_channel = LoungeChannel.query.get(channel_id)
+    if not target_channel: return jsonify({"error": "Channel not found"}), 404
+
+    # Permission Check
+    user_role = get_lounge_role(user.id, target_channel.lounge_id)
+    if user_role not in ['owner', 'moderator']:
+        return jsonify({"error": "Forbidden: You do not have permission to do this."}), 403
+
+    # Find the current main channel in this lounge
+    current_main = LoungeChannel.query.filter_by(lounge_id=target_channel.lounge_id, is_main=True).first()
+    
+    # This is a transaction: unset the old main and set the new main
+    if current_main:
+        current_main.is_main = False
+    
+    target_channel.is_main = True
+    db.session.commit()
+
+    return jsonify({"ok": True, "message": f"#{target_channel.name} is now the main channel."})
 
 @app.get("/api/lounge/<int:lounge_id>/members")
 def get_lounge_members(lounge_id):
@@ -894,6 +995,11 @@ def get_lounges():
     ]
     return jsonify(lounge_list)
 
+# In server.py, find and REPLACE your join_lounge function
+
+
+# In server.py, REPLACE your existing join_lounge function
+
 @app.post("/api/lounge/<int:lounge_id>/join")
 def join_lounge(lounge_id):
     user = auth_user()
@@ -902,19 +1008,46 @@ def join_lounge(lounge_id):
     lounge = Lounge.query.get(lounge_id)
     if not lounge: return jsonify({"error": "Lounge not found"}), 404
     
-    # Prevent users from joining private lounges without an invite
     if lounge.privacy == 'private':
         return jsonify({"error": "This lounge is private and requires an invitation to join."}), 403
 
-    # Check if the user is already a member
-    existing_membership = LoungeMember.query.filter_by(user_id=user.id, lounge_id=lounge.id).first()
-    if existing_membership:
+    if LoungeMember.query.filter_by(user_id=user.id, lounge_id=lounge.id).first():
         return jsonify({"error": "You are already a member of this lounge."}), 409
 
-    # Add the user as a new member
-    new_membership = LoungeMember(user_id=user.id, lounge_id=lounge.id, role='member')
-    db.session.add(new_membership)
-    db.session.commit()
+    db.session.add(LoungeMember(user_id=user.id, lounge_id=lounge.id, role='member'))
+    
+    # --- THIS IS THE FIX ---
+    # Instead of looking for '#general', find the channel marked as main.
+    main_channel = LoungeChannel.query.filter_by(lounge_id=lounge.id, is_main=True).first()
+    
+    if main_channel:
+        system_message = LoungeMessage(
+            text=f"{user.username} joined the lounge.",
+            user_id=user.id,
+            channel_id=main_channel.id, # Use the main channel's ID
+            message_type='system_event'
+        )
+        db.session.add(system_message)
+        db.session.commit()
+
+        message_payload = {
+            "id": system_message.id,
+            "text": system_message.text,
+            "image": None,
+            "timestamp": system_message.timestamp.isoformat(),
+            "channel_id": main_channel.id, # Use the main channel's ID
+            "reactions": {},
+            "message_type": system_message.message_type,
+            "author": {
+                "username": user.username, "fullName": user.full_name,
+                "profilePic": user.profile_pic, "rank": user.rank
+            }
+        }
+        socketio.emit('new_lounge_message', message_payload, room=f"channel_{main_channel.id}")
+    else:
+        # If no main channel is found for some reason, just commit the membership change.
+        db.session.commit()
+    # --- END OF FIX ---
     
     return jsonify({"ok": True, "message": f"Welcome to {lounge.name}!"})
 
@@ -927,33 +1060,27 @@ def get_lounge_channels(lounge_id):
     if not lounge: return jsonify({"error": "Lounge not found"}), 404
     
     user_role = get_lounge_role(user.id, lounge_id)
-    
-    # --- THIS IS THE KEY CHANGE ---
     is_member = user_role is not None
-    # --- END CHANGE ---
     
     if lounge.privacy in ['private', 'unlisted'] and not is_member:
-        # For private lounges, if not a member, don't even return channels.
-        # For unlisted, we still want to show the 'join' page, so we return info.
         if lounge.privacy == 'private':
             return jsonify({"error": "Forbidden: You are not a member of this private lounge."}), 403
-        else: # Unlisted and not a member
-            return jsonify({
-                "channels": [],
-                "user_role": None,
-                "is_member": False # Explicitly state they are not a member
-            })
+        else:
+            return jsonify({ "channels": [], "user_role": None, "is_member": False })
 
     query = LoungeChannel.query.filter_by(lounge_id=lounge.id)
     if not is_member or user_role not in ['owner', 'moderator']:
         query = query.filter(LoungeChannel.permission_level != 'mods_only_view')
     
-    channels = query.order_by(LoungeChannel.id).all()
+    channels = query.order_by(LoungeChannel.is_main.desc(), LoungeChannel.name.asc()).all()
     
     return jsonify({
-        "channels": [{"id": c.id, "name": c.name, "permission_level": c.permission_level} for c in channels],
+        # --- ▼▼▼ THIS IS THE FIX ▼▼▼ ---
+        # We now include the "is_main" flag for each channel.
+        "channels": [{"id": c.id, "name": c.name, "permission_level": c.permission_level, "is_main": c.is_main} for c in channels],
+        # --- ▲▲▲ END OF FIX ▲▲▲ ---
         "user_role": user_role,
-        "is_member": is_member # <-- ADD THIS LINE
+        "is_member": is_member
     })
 
 
@@ -990,6 +1117,7 @@ def get_lounge_channel_messages(channel_id):
             "image": msg.image,
             "timestamp": msg.timestamp.isoformat(),
             "reactions": reactions_map.get(msg.id, {}), # <-- ADD THIS
+            "message_type": msg.message_type,
             "author": {
                 "username": msg.author.username,
                 "fullName": msg.author.full_name,
@@ -1041,13 +1169,15 @@ def handle_send_lounge_message(data):
     db.session.add(new_message)
     db.session.commit()
 
+    # --- THIS IS THE FIX: Use .strftime() here as well ---
     message_payload = {
         "id": new_message.id,
         "text": new_message.text,
         "image": new_message.image,
-        "timestamp": new_message.timestamp.isoformat(),
+        "timestamp": new_message.timestamp.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
         "channel_id": channel_id,
         "reactions": {},
+        "message_type": new_message.message_type, # Added this line
         "author": {
             "username": user.username,
             "fullName": user.full_name,
@@ -1057,6 +1187,25 @@ def handle_send_lounge_message(data):
     }
     emit('new_lounge_message', message_payload, room=f"channel_{channel_id}")
 
+
+@app.get("/api/me/activity")
+def get_my_activity():
+    user = auth_user()
+    if not user: return jsonify({"error": "unauthorized"}), 401
+
+    my_posts = CircuitPost.query.filter_by(user_id=user.id).order_by(CircuitPost.created_at.desc()).limit(10).all()
+    my_liked_posts = CircuitPost.query.join(post_likes).filter(post_likes.c.user_id == user.id).order_by(CircuitPost.created_at.desc()).limit(10).all()
+    my_circuits = Circuit.query.filter_by(user_id=user.id).order_by(Circuit.id.desc()).limit(10).all()
+    my_owned_lounges = Lounge.query.filter_by(owner_id=user.id).order_by(Lounge.created_at.desc()).limit(10).all()
+
+    # --- THIS IS THE FIX: Add checks to ensure timestamps exist before formatting ---
+    results = {
+        "posts": [{"text": p.text, "circuit_title": p.circuit.title, "circuit_id": p.circuit.id, "host_school": p.circuit.host_school, "timestamp": p.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ') if p.created_at else None} for p in my_posts],
+        "likes": [{"text": l.text, "original_author": l.author.full_name, "circuit_title": l.circuit.title, "circuit_id": l.circuit.id, "host_school": l.circuit.host_school, "timestamp": l.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ') if l.created_at else None} for l in my_liked_posts],
+        "circuits": [{"title": c.title, "host_school": c.host_school, "id": c.id} for c in my_circuits],
+        "lounges": [{"name": l.name, "id": l.id, "timestamp": l.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ') if l.created_at else None} for l in my_owned_lounges]
+    }
+    return jsonify(results)
 
 # ADD these new handlers for joining/leaving lounge rooms
 @socketio.on('join_lounge_channel')
@@ -1844,11 +1993,27 @@ def delete_lounge_channel(channel_id):
     if user_role not in ['owner', 'moderator']:
         return jsonify({"error": "Forbidden: You do not have permission to delete channels."}), 403
     
-    if channel.name == 'general':
-        return jsonify({"error": "The #general channel cannot be deleted."}), 400
+    # --- REMOVED ---
+    # The special check preventing the deletion of '#general' is now gone.
+    # if channel.name == 'general':
+    #     return jsonify({"error": "The #general channel cannot be deleted."}), 400
         
-    # Delete associated messages before deleting the channel
-    LoungeMessage.query.filter_by(channel_id=channel.id).delete()
+    # --- NEW LOGIC: Handle deleting the main channel ---
+    if channel.is_main:
+        # Find another channel in the same lounge to promote.
+        # We order by name to predictably get the "next" channel alphabetically.
+        next_channel = LoungeChannel.query.filter(
+            LoungeChannel.lounge_id == channel.lounge_id,
+            LoungeChannel.id != channel.id
+        ).order_by(LoungeChannel.name.asc()).first()
+
+        # If another channel exists, make it the new main channel.
+        if next_channel:
+            next_channel.is_main = True
+    # --- END OF NEW LOGIC ---
+        
+    # The cascade="all, delete-orphan" in your LoungeChannel model will 
+    # automatically handle deleting all messages in this channel.
     db.session.delete(channel)
     db.session.commit()
     return jsonify({"ok": True, "message": "Channel deleted."})
@@ -1938,18 +2103,19 @@ def search():
     lounges = Lounge.query.filter(lounge_filters).limit(10).all()
     articles = Article.query.filter(article_filters).limit(10).all()
 
-    # 4. Format and return all results in organized categories
+    my_posts = CircuitPost.query.filter_by(user_id=user.id).order_by(CircuitPost.created_at.desc()).limit(10).all()
+    my_liked_posts = CircuitPost.query.join(post_likes).filter(post_likes.c.user_id == user.id).order_by(CircuitPost.created_at.desc()).limit(10).all()
+    my_circuits = Circuit.query.filter_by(user_id=user.id).order_by(Circuit.id.desc()).limit(10).all()
+    my_owned_lounges = Lounge.query.filter_by(owner_id=user.id).order_by(Lounge.created_at.desc()).limit(10).all()
+
+    # --- THIS IS THE FIX: Use .strftime() to ensure UTC 'Z' format ---
     results = {
-        "users": [{"username": u.username, "fullName": u.full_name, "rank": u.rank, "profile_pic": u.profile_pic} for u
-                  in users],
-        "circuits": [{"id": c.id, "title": c.title, "hostSchool": c.host_school, "coverImage": c.cover_image} for c in
-                     circuits],
-        "lounges": [{"id": l.id, "name": l.name, "description": l.description} for l in lounges],
-        "articles": [{"id": a.id, "title": a.title, "author": a.author.full_name, "schoolTag": a.author.school} for a in
-                     articles]
+        "posts": [{"text": p.text, "circuit_title": p.circuit.title, "circuit_id": p.circuit.id, "host_school": p.circuit.host_school, "timestamp": p.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')} for p in my_posts],
+        "likes": [{"text": l.text, "original_author": l.author.full_name, "circuit_title": l.circuit.title, "circuit_id": l.circuit.id, "host_school": l.circuit.host_school, "timestamp": l.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')} for l in my_liked_posts],
+        "circuits": [{"title": c.title, "host_school": c.host_school, "id": c.id} for c in my_circuits],
+        "lounges": [{"name": l.name, "id": l.id, "timestamp": l.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')} for l in my_owned_lounges]
     }
     return jsonify(results)
-
 
 @app.get("/api/trending")
 def get_trending_items():

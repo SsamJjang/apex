@@ -1071,6 +1071,34 @@
             height: 40px;
             margin-right: 15px;
         }
+
+        .chat-context-separator {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 0.8em;
+            font-weight: bold;
+            color: #999;
+            display: flex;
+            align-items: center;
+        }
+
+        .chat-context-separator::before,
+        .chat-context-separator::after {
+            content: '';
+            flex-grow: 1;
+            height: 1px;
+            background-color: #eee;
+            margin: 0 15px;
+        }
+
+        .system-message {
+            text-align: center;
+            margin: 15px 0;
+            font-size: 0.85em;
+            font-style: italic;
+            color: #888;
+        }
+
         .chat-list-item {
             display: flex;
             align-items: center;
@@ -2477,6 +2505,21 @@
             color: var(--primary-solid); /* Use a solid color for the link */
         }
 
+        .lounge-channel-list-wrapper {
+            flex-grow: 1; /* Allows this container to take up all available vertical space */
+            overflow-y: auto; /* Enables vertical scrolling only when content overflows */
+            min-height: 0; /* A flexbox fix to ensure shrinking works correctly */
+
+            /* --- Hides the scrollbar across different browsers --- */
+            scrollbar-width: none; /* For Firefox */
+            -ms-overflow-style: none;  /* For Internet Explorer and Edge */
+        }
+
+        /* For Chrome, Safari, and other Webkit browsers */
+        .lounge-channel-list-wrapper::-webkit-scrollbar {
+            display: none;
+        }
+
         /* --- Footer Styles --- */
         footer {
             display: none; /* Hidden by default, shown via JavaScript */
@@ -2511,6 +2554,12 @@
             justify-content: center;
             gap: 25px;
             margin-bottom: 10px;
+        }
+
+        .main-channel-icon {
+            color: #f0b429; /* A nice gold color */
+            margin-left: 6px; /* Changed from margin-right */
+            font-size: 0.9em;
         }
 
         .footer-links a {
@@ -2811,6 +2860,14 @@
         }
         .action-btn:hover {
             background-color: #d1d1d1;
+        }
+
+        .circuit-card h4, .circuit-card p {
+            width: 90%; /* Give text some padding from the circle's edge */
+            white-space: nowrap; /* Prevent text from wrapping to a new line */
+            overflow: hidden; /* Hide any text that goes beyond the element's width */
+            text-overflow: ellipsis; /* Display "..." for the hidden/overflowed text */
+            box-sizing: border-box; /* Ensures padding is included in the width calculation */
         }
 
         /* Dropdown menu for the 3-dot button */
@@ -3289,6 +3346,77 @@
             margin-right: 5px;
         }
 
+        #notification-toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .notification-toast {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            color: #fff;
+            font-weight: bold;
+            min-width: 250px;
+            animation: slideInDown 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .notification-toast.exiting {
+            animation: fadeOutUp 0.4s ease-out forwards;
+        }
+
+        .notification-toast.success {
+            background-color: #28a745; /* Green */
+        }
+
+        .notification-toast.error {
+            background-color: #dc3545; /* Red */
+        }
+
+        .notification-toast::before {
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+
+        .notification-toast.success::before {
+            content: '\f00c'; /* Checkmark icon */
+        }
+
+        .notification-toast.error::before {
+            content: '\f00d'; /* X-mark icon */
+        }
+
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeOutUp {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+        }
+
         /* Show the overlay when the user hovers over the post */
         .user-post-item:hover .post-overlay {
             opacity: 1;
@@ -3404,6 +3532,14 @@
             justify-content: center;
             align-items: center;
             cursor: pointer; /* Add a pointer to indicate the background is clickable */
+        }
+
+        .profile-menu-item.danger {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .profile-menu-item.danger:hover {
+            background-color: #fff0f0;
         }
 
 
@@ -3646,6 +3782,65 @@
             outline: none;
         }
 
+        .confirmation-modal-content {
+            background-color: #fff;
+            border-radius: 15px;
+            width: 400px;
+            max-width: 90vw;
+            padding: 30px;
+            text-align: center;
+            animation: zoomIn 0.3s ease;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.1);
+        }
+
+        .confirmation-modal-icon {
+            font-size: 3em;
+            color: #e67e22; /* A warning orange */
+            margin-bottom: 15px;
+        }
+
+        .confirmation-modal-content h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.5em;
+        }
+
+        .confirmation-modal-content p {
+            color: #666;
+            margin: 0 0 25px 0;
+        }
+
+        .confirm-modal-footer {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .confirm-modal-footer button {
+            padding: 10px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .confirm-btn-cancel {
+            background-color: #e9ecef;
+            color: #495057;
+        }
+        .confirm-btn-cancel:hover {
+            opacity: 0.9;
+        }
+
+        .confirm-btn-confirm {
+            background-color: #dc3545; /* Red */
+            color: #fff;
+        }
+        .confirm-btn-confirm:hover {
+            opacity: 0.9;
+        }
+
         .reaction-picker {
             position: absolute;
             background-color: #fff;
@@ -3713,6 +3908,7 @@
     </script>
 </head>
 <body>
+    <div id="notification-toast-container"></div>
     <div class="background-animations">
         <div class="bg-item"></div>
         <div class="bg-item"></div>
@@ -3761,6 +3957,17 @@
                 </button>
             </div>
         </main>
+    </div>
+        <div id="confirmation-modal" class="following-modal hidden">
+        <div class="confirmation-modal-content">
+            <i class="fas fa-exclamation-triangle confirmation-modal-icon"></i>
+            <h3 id="confirm-modal-title">Are you sure?</h3>
+            <p id="confirm-modal-text">This action cannot be undone.</p>
+            <div class="confirm-modal-footer">
+                <button class="confirm-btn-cancel" onclick="closeConfirmationModal()">Cancel</button>
+                <button id="confirm-modal-btn" class="confirm-btn-confirm">Confirm</button>
+            </div>
+        </div>
     </div>
     <div id="login-page" class="page active">
         <header>
@@ -4050,8 +4257,10 @@
                     <input type="file" id="loungeCoverInput" accept="image/*" style="display: none;">
                 </div>
 
-                <input type="text" id="loungeName" placeholder="Lounge Name" maxlength="30" style="margin-top: 15px;">
-                <textarea id="loungeDescription" placeholder="A short description for your lounge..." rows="3"></textarea>
+                <input type="text" id="loungeName" placeholder="Lounge Name" maxlength="20" style="margin-top: 15px;">
+                <span id="loungeNameCounter" class="char-counter" style="margin-bottom: 10px;">0 / 20</span>
+                <textarea id="loungeDescription" placeholder="A short description for your lounge..." rows="3" maxlength="600"></textarea>
+                <span id="loungeDescCounter" class="char-counter">0 / 600</span>
                 
                 <div class="form-field-wrapper" style="text-align: left; margin-top: 20px;">
                     <label style="font-weight: bold; margin-bottom: 10px; display: block;">Privacy Settings</label>
@@ -4085,7 +4294,33 @@
             </div>
         </main>
     </div>
+    <div id="my-lounges-page" class="page">
+        <header>
+            <div class="header-left">
+                <a href="#" class="fancy-back-button" onclick="showProfile('me')"><i class="fas fa-arrow-left"></i> Back to Profile</a>
+            </div>
+            <div class="header-center"><p>My Lounges</p></div>
+            <div class="header-right"></div>
+        </header>
+        <main>
+            <div id="my-lounges-grid" class="circuit-grid">
+                </div>
+        </main>
+    </div>
 
+    <div id="my-activity-page" class="page">
+        <header>
+            <div class="header-left">
+                <a href="#" class="fancy-back-button" onclick="showProfile('me')"><i class="fas fa-arrow-left"></i> Back to Profile</a>
+            </div>
+            <div class="header-center"><p>My Activity</p></div>
+            <div class="header-right"></div>
+        </header>
+        <main>
+            <div id="my-activity-container" style="max-width: 800px; margin: 0 auto;">
+                </div>
+        </main>
+    </div>
     <div id="profile-page" class="page">
         <header>
             <div class="header-left">
@@ -4322,10 +4557,13 @@
                         <h4 id="lounge-sidebar-title">Lounge Name</h4>
                     </div>
                     <div class="lounge-channel-category">Chats</div>
-                    <ul id="lounge-channels-list" class="lounge-channels-list">
-                        </ul>
+
+                    <div class="lounge-channel-list-wrapper">
+                        <ul id="lounge-channels-list" class="lounge-channels-list">
+                            </ul>
+                    </div>
                     <div class="lounge-channel-category">Voice Chat</div>
-                     <div class="lounge-channel-item">
+                    <div class="lounge-channel-item">
                         <span><i class="fas fa-headset" style="margin-right: 8px;"></i>General</span>
                     </div>
                 </div>
@@ -4806,7 +5044,6 @@
         function renderSearchResults(data, query) {
             const container = document.getElementById('search-results-container');
             container.innerHTML = '';
-
             let contentFound = false;
 
             if (data.users && data.users.length > 0) {
@@ -4815,12 +5052,19 @@
                 section.className = 'content-section';
                 let html = '<h3>Users</h3><div class="all-profiles-grid">';
                 data.users.forEach(user => {
+                    // --- FIX #1: Store the user data locally so the picture can be found ---
+                    if (!profileData[user.username]) {
+                        profileData[user.username] = { name: user.fullName, profilePicUrl: user.profile_pic, ...user };
+                    }
+                    // --- END FIX #1 ---
+                    
                     html += `
                         <div class="profile-grid-card" onclick="showProfile('${user.username}')">
                             <div class="profile-pic" data-user-pic-id="${user.username}"></div>
                             <p class="profile-card-name">${user.fullName} ${getRankIcon(user.rank)}</p>
                             <p class="profile-card-username">@${user.username}</p>
                         </div>`;
+                    // The setTimeout is now redundant but safe to keep
                     setTimeout(() => updateProfilePictures(user.username), 0);
                 });
                 html += '</div>';
@@ -4834,8 +5078,16 @@
                 section.className = 'content-section';
                 let html = '<h3>Circuits</h3><div class="circuit-grid">';
                 data.circuits.forEach(c => {
-                    const bg = c.coverImage ? `style="background-image: url(${c.coverImage})"` : 'class="no-image"';
-                    html += `<div class="circuit-card" ${bg} onclick="showCircuit(${c.id},'${c.title}','${c.hostSchool}')"><h4>${c.title}</h4><p>${c.hostSchool}</p></div>`;
+                    // --- FIX #2: Correctly build the card with a background image or 'no-image' class ---
+                    let cardClass = 'circuit-card';
+                    let cardStyle = '';
+                    if (c.coverImage) {
+                        cardStyle = `style="background-image: url(${c.coverImage})"`;
+                    } else {
+                        cardClass += ' no-image';
+                    }
+                    html += `<div class="${cardClass}" ${cardStyle} onclick="showCircuit(${c.id},'${c.title.replace(/'/g, "\\'")}', '${c.hostSchool.replace(/'/g, "\\'")}');"><h4>${c.title}</h4><p>${c.hostSchool}</p></div>`;
+                    // --- END FIX #2 ---
                 });
                 html += '</div>';
                 section.innerHTML = html;
@@ -4848,7 +5100,16 @@
                 section.className = 'content-section';
                 let html = '<h3>Lounges</h3><div class="circuit-grid">';
                 data.lounges.forEach(l => {
-                    html += `<div class="circuit-card no-image" onclick="showLounge(${l.id},'${l.name}')"><h4>${l.name}</h4><p>${l.description.substring(0,20)}...</p></div>`;
+                    // --- FIX #3: Add the same logic for lounge cover images ---
+                    let cardClass = 'circuit-card';
+                    let cardStyle = '';
+                    if (l.cover_image) {
+                        cardStyle = `style="background-image: url(${l.cover_image})"`;
+                    } else {
+                        cardClass += ' no-image';
+                    }
+                    html += `<div class="${cardClass}" ${cardStyle} onclick="showLounge(${l.id},'${l.name.replace(/'/g, "\\'")}');"><h4>${l.name}</h4><p>${truncate(l.description, 20)}</p></div>`;
+                    // --- END FIX #3 ---
                 });
                 html += '</div>';
                 section.innerHTML = html;
@@ -4856,6 +5117,7 @@
             }
 
             if (data.articles && data.articles.length > 0) {
+                // ... (article rendering is unchanged and correct) ...
                 contentFound = true;
                 const section = document.createElement('div');
                 section.className = 'content-section';
@@ -5090,9 +5352,7 @@
         }
 
         function fetchAndRenderLounges() {
-            fetch(`${API_BASE_URL}/api/lounges`, {
-                headers: { 'Authorization': `Bearer ${apiToken}` }
-            })
+            fetch(`${API_BASE_URL}/api/lounges`, { headers: { 'Authorization': `Bearer ${apiToken}` } })
             .then(response => response.json())
             .then(lounges => {
                 allLoungesData = lounges;
@@ -5101,7 +5361,7 @@
 
                 const createCard = document.createElement('div');
                 createCard.className = 'circuit-card create-circuit-card';
-                createCard.onclick = () => showCreateLoungePage(); // Use the new setup function
+                createCard.onclick = () => showCreateLoungePage();
                 createCard.innerHTML = `<h4>+</h4><p>New Lounge</p>`;
                 row.appendChild(createCard);
 
@@ -5110,31 +5370,29 @@
                     card.className = 'circuit-card';
                     card.onclick = () => showLounge(lounge.id, lounge.name);
                     
-                    // --- NEW LOGIC for cover image and privacy icon ---
                     if (lounge.cover_image) {
                         card.style.backgroundImage = `url(${lounge.cover_image})`;
                     } else {
                         card.classList.add('no-image');
                     }
-
-                    let privacyIcon = '';
+                    
+                    let privacyIcon = ''; // (privacy icon logic is unchanged)
                     if (lounge.privacy === 'private') {
                         privacyIcon = '<i class="fas fa-lock" style="position: absolute; top: 10px; right: 10px; color: white; text-shadow: 1px 1px 2px black; font-size: 0.8em;"></i>';
                     } else if (lounge.privacy === 'unlisted') {
                         privacyIcon = '<i class="fas fa-link" style="position: absolute; top: 10px; right: 10px; color: white; text-shadow: 1px 1px 2px black; font-size: 0.8em;"></i>';
                     }
                     
+                    // --- THIS PART IS UPDATED ---
                     card.innerHTML = `
-                        <h4>${lounge.name}</h4>
-                        <p>${lounge.description.substring(0, 20)}...</p>
+                        <h4>${truncate(lounge.name, 10)}</h4> 
+                        <p>${truncate(lounge.description, 15)}</p>
                         ${privacyIcon}
                     `;
-                    // --- END OF NEW LOGIC ---
-
+                    // --- END UPDATE ---
                     row.appendChild(card);
                 });
-            })
-            .catch(error => console.error("Error fetching lounges:", error));
+            });
         }
 
 
@@ -5154,36 +5412,36 @@
         function handleCreateLounge() {
             const name = document.getElementById('loungeName').value.trim();
             const description = document.getElementById('loungeDescription').value.trim();
-            // --- GET NEW VALUES ---
             const privacy = document.querySelector('input[name="loungePrivacy"]:checked').value;
             const coverImage = newLoungeCoverUrl;
 
+            // --- NEW CLIENT-SIDE VALIDATION ---
             if (!name) {
-                alert('Please enter a name for the lounge.');
+                showToast('Lounge name is required.', 'error');
                 return;
             }
+            if (name.length > 20) {
+                showToast('Lounge name cannot exceed 20 characters.', 'error');
+                return;
+            }
+            if (description.length > 600) {
+                showToast('Lounge description cannot exceed 600 characters.', 'error');
+                return;
+            }
+            // --- END VALIDATION ---
 
             fetch(`${API_BASE_URL}/api/lounges`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiToken}`
-                },
-                // --- SEND NEW VALUES ---
-                body: JSON.stringify({ 
-                    name: name, 
-                    description: description,
-                    privacy: privacy,
-                    coverImage: coverImage
-                })
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiToken}` },
+                body: JSON.stringify({ name: name, description: description, privacy: privacy, coverImage: coverImage })
             })
             .then(response => response.json().then(data => ({ status: response.status, body: data })))
             .then(({ status, body }) => {
                 if (status === 201) {
-                    alert('Lounge created!');
+                    showToast('Lounge created successfully!', 'success');
                     showPage('index-page');
                 } else {
-                    alert('Error: ' + (body.error || 'Could not create lounge.'));
+                    showToast(body.error || 'Could not create lounge.', 'error');
                 }
             });
         }
@@ -5193,67 +5451,83 @@
             const categoryHeader = document.querySelector('.lounge-channel-category');
             list.innerHTML = '';
 
-            // --- NEW: Add the "+" button for mods/owners ---
             if (currentUserLoungeRole === 'owner' || currentUserLoungeRole === 'moderator') {
                 categoryHeader.innerHTML = 'Chats <i class="fas fa-plus" style="cursor: pointer; float: right;" onclick="showCreateChannelModal()"></i>';
             } else {
                 categoryHeader.textContent = 'Chats';
             }
-            // --- END NEW ---
 
             channels.forEach(channel => {
                 const li = document.createElement('li');
                 li.className = 'lounge-channel-item';
                 li.id = `channel-item-${channel.id}`;
-                li.onclick = () => loadLoungeChannel(channel.id, channel.name, channel.permission_level);
+                li.onclick = () => loadLoungeChannel(channel);
 
                 const channelNameSpan = document.createElement('span');
-                let icon = '';
-                if (channel.permission_level === 'mods_only_chat') {
-                    icon = '<i class="fas fa-lock" style="margin-right: 8px; color: #888;"></i>';
-                } else if (channel.permission_level === 'mods_only_view') {
-                    icon = '<i class="fas fa-user-shield" style="margin-right: 8px; color: #888;"></i>';
+                let iconHtml = '';
+                
+                if (channel.is_main) {
+                    iconHtml += '<i class="fas fa-star main-channel-icon"></i>';
                 }
-                channelNameSpan.innerHTML = `${icon}# ${channel.name}`;
+
+                let prefixIcon = '';
+                if (channel.permission_level === 'mods_only_chat') {
+                    prefixIcon = '<i class="fas fa-lock" style="margin-right: 8px; color: #888;"></i>';
+                } else if (channel.permission_level === 'mods_only_view') {
+                    prefixIcon = '<i class="fas fa-user-shield" style="margin-right: 8px; color: #888;"></i>';
+                }
+                
+                // --- ▼▼▼ THIS IS THE FIX ▼▼▼ ---
+                // The iconHtml variable is now at the end.
+                channelNameSpan.innerHTML = `${prefixIcon}# ${channel.name} ${iconHtml}`;
+                // --- ▲▲▲ END OF FIX ▲▲▲ ---
+                
                 li.appendChild(channelNameSpan);
                 
                 const menuBtn = document.createElement('i');
                 menuBtn.className = 'fas fa-ellipsis-v channel-options-btn';
-                menuBtn.onclick = (event) => openChannelContextMenu(event, channel.id, channel.name);
+                menuBtn.onclick = (event) => openChannelContextMenu(event, channel);
                 li.appendChild(menuBtn);
 
                 list.appendChild(li);
             });
         }
 
-        function loadLoungeChannel(channelId, channelName, permissionLevel) {
+        function loadLoungeChannel(channel) {
+            // Destructure the channel object to get the properties we need
+            const { id, name, permission_level } = channel;
+
             if (currentLoungeChannelId && socket) {
                 socket.emit('leave_lounge_channel', { channel_id: currentLoungeChannelId });
             }
-            currentLoungeChannelId = channelId;
+            currentLoungeChannelId = id;
             if (socket) {
                 socket.emit('join_lounge_channel', { channel_id: currentLoungeChannelId });
             }
 
-            // Update UI
+            // Update UI to show which channel is active
             document.querySelectorAll('.lounge-channel-item').forEach(item => item.classList.remove('active'));
-            document.getElementById(`channel-item-${channelId}`).classList.add('active');
-            const inputField = document.getElementById('lounge-input-field');
-            inputField.placeholder = `Message in #${channelName}`;
+            const channelElement = document.getElementById(`channel-item-${id}`);
+            if (channelElement) {
+                channelElement.classList.add('active');
+            }
 
-            // --- NEW: Disable input based on permissions ---
-            if (permissionLevel === 'mods_only_chat' && currentUserLoungeRole === 'member') {
+            const inputField = document.getElementById('lounge-input-field');
+            inputField.placeholder = `Message in #${name}`;
+
+            // Disable the input field based on channel permissions and user role
+            if (permission_level === 'mods_only_chat' && currentUserLoungeRole === 'member') {
                 inputField.disabled = true;
                 inputField.placeholder = 'Only moderators can send messages here.';
             } else {
                 inputField.disabled = false;
             }
-            // --- END NEW ---
 
             const chatBody = document.getElementById('lounge-body');
             chatBody.innerHTML = '<p style="text-align:center; color:#888;">Loading history...</p>';
 
-            fetch(`${API_BASE_URL}/api/lounge/channel/${channelId}/messages`, {
+            // Fetch and render the messages for the selected channel
+            fetch(`${API_BASE_URL}/api/lounge/channel/${id}/messages`, {
                 headers: { 'Authorization': `Bearer ${apiToken}` }
             })
             .then(response => response.json())
@@ -5296,7 +5570,6 @@
 
         function handleJoinLounge() {
             if (!currentLoungeId) return;
-
             const joinButton = document.getElementById('join-lounge-btn');
             joinButton.disabled = true;
             joinButton.innerHTML = 'Joining...';
@@ -5308,11 +5581,11 @@
             .then(response => response.json().then(data => ({ status: response.status, body: data })))
             .then(({ status, body }) => {
                 if (status === 200) {
-                    // Success! Reload the lounge view. It will now show the chat.
+                    showToast(`Welcome to the lounge!`, 'success');
                     const loungeName = document.getElementById('lounge-header-title').textContent;
                     showLounge(currentLoungeId, loungeName);
                 } else {
-                    alert('Error: ' + (body.error || 'Could not join the lounge.'));
+                    showToast(body.error || 'Could not join the lounge.', 'error');
                     joinButton.disabled = false;
                     joinButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> Join Lounge';
                 }
@@ -5327,15 +5600,19 @@
             currentLoungeId = loungeId;
             currentLoungeChannelId = null;
 
-            // --- HIDE/SHOW UI ELEMENTS ---
             const chatBody = document.getElementById('lounge-body');
             const chatInput = document.getElementById('lounge-input');
             const joinOverlay = document.getElementById('lounge-join-overlay');
             const loungeSidebar = document.querySelector('.lounge-sidebar');
 
+            const joinButton = document.getElementById('join-lounge-btn');
+            if (joinButton) {
+                joinButton.disabled = false;
+                joinButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> Join Lounge';
+            }
+
             chatBody.addEventListener('scroll', closeAllPopups);
 
-            // Reset UI to a clean state
             chatBody.style.display = 'none';
             chatInput.style.display = 'none';
             joinOverlay.classList.remove('visible');
@@ -5353,7 +5630,6 @@
             .then(response => response.json())
             .then(data => {
                 if (data.is_member) {
-                    // --- USER IS A MEMBER: Show the chat ---
                     chatBody.style.display = 'flex';
                     chatInput.style.display = 'flex';
                     joinOverlay.classList.remove('visible');
@@ -5363,23 +5639,25 @@
                     renderLoungeChannels(data.channels);
 
                     if (data.channels.length > 0) {
-                        loadLoungeChannel(data.channels[0].id, data.channels[0].name);
+                        // --- ▼▼▼ THIS IS THE FIX ▼▼▼ ---
+                        // We now pass the entire first channel object, not just its id and name.
+                        loadLoungeChannel(data.channels[0]);
+                        // --- ▲▲▲ END OF FIX ▲▲▲ ---
                     } else {
                         chatBody.innerHTML = '<p style="text-align:center;color:#888;">No channels have been created yet.</p>';
                     }
                 } else {
-                    // --- USER IS NOT A MEMBER: Show the join overlay ---
+                    // ... (the rest of the function for non-members is correct and unchanged)
                     chatBody.style.display = 'none';
                     chatInput.style.display = 'none';
                     joinOverlay.classList.add('visible');
-                    loungeSidebar.style.display = 'none'; // Hide sidebar for non-members
+                    loungeSidebar.style.display = 'none';
 
-                    // Update overlay with lounge details
                     const loungeDetails = allLoungesData.find(l => l.id === loungeId);
                     if (loungeDetails) {
                         document.getElementById('join-lounge-title').textContent = `You found the "${loungeDetails.name}" Lounge!`;
                         document.getElementById('join-lounge-description').textContent = loungeDetails.description || 'Join this Lounge to view channels, see messages, and chat with other members.';
-
+                        
                         const iconEl = document.getElementById('join-lounge-privacy-icon');
                         if (loungeDetails.privacy === 'unlisted') {
                             iconEl.className = 'fas fa-link privacy-icon';
@@ -5560,38 +5838,42 @@
         }
 
         function showCreateLoungePage() {
-            // Clear the form fields
-            document.getElementById('loungeName').value = '';
-            document.getElementById('loungeDescription').value = '';
-            document.getElementById('loungeCoverInput').value = null; // Clear file input
-            document.getElementById('privacyPublic').checked = true; // Default to public
+            // --- ADD LIVE CHARACTER COUNTERS ---
+            const nameInput = document.getElementById('loungeName');
+            const descInput = document.getElementById('loungeDescription');
+            const nameCounter = document.getElementById('loungeNameCounter');
+            const descCounter = document.getElementById('loungeDescCounter');
+
+            nameInput.oninput = () => nameCounter.textContent = `${nameInput.value.length} / 20`;
+            descInput.oninput = () => descCounter.textContent = `${descInput.value.length} / 600`;
+            // --- END ADDITION ---
+
+            nameInput.value = '';
+            descInput.value = '';
+            nameCounter.textContent = '0 / 20'; // Reset counters
+            descCounter.textContent = '0 / 600';
+
+            document.getElementById('loungeCoverInput').value = null;
+            document.getElementById('privacyPublic').checked = true;
 
             const preview = document.getElementById('loungeCoverPreview');
             preview.style.backgroundImage = 'none';
-            preview.innerHTML = '<span>+ Upload Image</span>';
+            preview.innerHTML = '<span>+ Upload Banner</span>';
+            newLoungeCoverUrl = null; // Changed from '' to null for consistency
 
-            // Reset the temporary URL
-            newLoungeCoverUrl = '';
-
-            // Add click listener to the preview to trigger the file input
             preview.onclick = () => document.getElementById('loungeCoverInput').click();
-
-            // Add change listener to the file input to handle the upload
             document.getElementById('loungeCoverInput').onchange = (event) => {
                 const file = event.target.files[0];
                 if (!file) return;
-
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const imageUrl = e.target.result;
-                    // Show the preview and store the URL
                     preview.style.backgroundImage = `url(${imageUrl})`;
-                    preview.innerHTML = ''; // Remove the "+ Upload" text
+                    preview.innerHTML = '';
                     newLoungeCoverUrl = imageUrl;
                 };
                 reader.readAsDataURL(file);
             };
-
             showPage('create-lounge-page');
         }
 
@@ -5843,6 +6125,28 @@
             });
         }
 
+        function formatDateSeparator(dateString) {
+            const today = new Date();
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            
+            const messageDate = new Date(dateString);
+
+            if (messageDate.toDateString() === today.toDateString()) {
+                return 'Today';
+            }
+            if (messageDate.toDateString() === yesterday.toDateString()) {
+                return 'Yesterday';
+            }
+            
+            // Fallback for older dates
+            return messageDate.toLocaleDateString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric'
+            });
+        }
+
         function populateProfileData(userData) {
             profileData.me.email = userData.email;
             profileData.me.name = userData.fullName;
@@ -6042,6 +6346,24 @@
             });
         }
 
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('notification-toast-container');
+            const toast = document.createElement('div');
+            toast.className = `notification-toast ${type}`;
+            toast.textContent = message;
+
+            container.appendChild(toast);
+
+            // Set a timeout to remove the toast
+            setTimeout(() => {
+                toast.classList.add('exiting');
+                // Wait for the exit animation to finish before removing from the DOM
+                setTimeout(() => {
+                    toast.remove();
+                }, 400); // This duration should match the CSS animation time
+            }, 4000); // The toast will be visible for 4 seconds
+        }
+
         function closeInviteUserModal() {
             document.getElementById('invite-lounge-member-modal').classList.add('hidden');
         }
@@ -6059,10 +6381,10 @@
             .then(response => response.json().then(data => ({ status: response.status, body: data })))
             .then(({ status, body }) => {
                 if (status === 200) {
-                    alert(body.message);
+                    showToast(body.message, 'success');
                     closeInviteUserModal();
                 } else {
-                    alert('Error: ' + body.error);
+                    showToast(body.error, 'error');
                 }
             });
         }
@@ -6348,6 +6670,16 @@
             })
             .then(response => response.json())
             .then(data => {
+                const chatBody = document.getElementById('chat-body');
+                chatBody.innerHTML = ''; // Clear loading message
+
+                if (data.conversation_start) {
+                    const startMarker = document.createElement('div');
+                    startMarker.className = 'chat-context-separator'; // Re-use the same style
+                    const startDate = formatDateSeparator(data.conversation_start.timestamp);
+                    startMarker.textContent = `${data.conversation_start.starter_name} started this chat on ${startDate}`;
+                    chatBody.appendChild(startMarker);
+                }
                 messageHistory[currentChatRecipient] = data.messages.map(msg => ({
                     ...msg, time: new Date(msg.time)
                 }));
@@ -6443,7 +6775,117 @@
             }
         }
 
+        function showMyLoungesPage() {
+            const grid = document.getElementById('my-lounges-grid');
+            grid.innerHTML = '<p>Loading your lounges...</p>';
+            showPage('my-lounges-page');
 
+            fetch(`${API_BASE_URL}/api/me/lounges`, { headers: { 'Authorization': `Bearer ${apiToken}` } })
+            .then(response => response.json())
+            .then(lounges => {
+                grid.innerHTML = ''; // Clear loading message
+                if (lounges.length === 0) {
+                    grid.innerHTML = '<p>You are not a member of any lounges yet.</p>';
+                    return;
+                }
+                // Reuse the same card style as other lounge/circuit lists
+                lounges.forEach(lounge => {
+                    let cardClass = 'circuit-card';
+                    let cardStyle = '';
+                    if (lounge.cover_image) {
+                        cardStyle = `style="background-image: url(${lounge.cover_image})"`;
+                    } else {
+                        cardClass += ' no-image';
+                    }
+                    const card = document.createElement('div');
+                    card.className = cardClass;
+                    card.setAttribute('style', cardStyle.replace('style=', '').replace(/"/g, ''));
+                    card.onclick = () => showLounge(lounge.id, lounge.name);
+                    card.innerHTML = `
+                        <h4>${truncate(lounge.name, 10)}</h4>
+                        <p>${truncate(lounge.description, 15)}</p>
+                    `;
+                    grid.appendChild(card);
+                });
+            });
+        }
+
+        function showMyActivityPage() {
+            const container = document.getElementById('my-activity-container');
+            container.innerHTML = '<p>Loading your recent activity...</p>';
+            showPage('my-activity-page');
+
+            // This fetch will now succeed and get all the data
+            fetch(`${API_BASE_URL}/api/me/activity`, { headers: { 'Authorization': `Bearer ${apiToken}` } })
+            .then(response => response.json())
+            .then(data => {
+                container.innerHTML = ''; // Clear loading message
+                let html = '';
+                let activityFound = false;
+
+                // Render Recent Posts
+                if (data.posts && data.posts.length > 0) {
+                    activityFound = true;
+                    html += '<div class="content-section"><h3>My Recent Posts</h3>';
+                    data.posts.forEach(p => {
+                        html += `<div class="following-list-item" style="align-items: flex-start;">
+                                    <i class="fas fa-comment" style="margin-top: 5px; margin-right: 15px; color: #555;"></i>
+                                    <div><p style="margin:0;">You posted in <strong>${p.circuit_title}</strong>: "${truncate(p.text, 50)}"</p>
+                                    <span class="message-timestamp">${formatTimestamp(new Date(p.timestamp))}</span></div>
+                                </div>`;
+                    });
+                    html += '</div>';
+                }
+                
+                // Render Recent Likes
+                if (data.likes && data.likes.length > 0) {
+                    activityFound = true;
+                    html += '<div class="content-section"><h3>My Recent Likes</h3>';
+                    data.likes.forEach(l => {
+                        html += `<div class="following-list-item" style="align-items: flex-start;">
+                                    <i class="fas fa-heart" style="margin-top: 5px; margin-right: 15px; color: #e74c3c;"></i>
+                                    <div><p style="margin:0;">You liked a post by <strong>${l.original_author}</strong> in <strong>${l.circuit_title}</strong></p>
+                                    <span class="message-timestamp">${formatTimestamp(new Date(l.timestamp))}</span></div>
+                                </div>`;
+                    });
+                    html += '</div>';
+                }
+
+                // --- THIS IS THE MISSING SECTION ---
+                // Render Created Circuits
+                if (data.circuits && data.circuits.length > 0) {
+                    activityFound = true;
+                    html += '<div class="content-section"><h3>Circuits I Created</h3>';
+                    data.circuits.forEach(c => {
+                        html += `<div class="following-list-item" style="align-items: flex-start; cursor:pointer;" onclick="showCircuit(${c.id},'${c.title}','${c.host_school}')">
+                                    <i class="fas fa-sitemap" style="margin-top: 5px; margin-right: 15px; color: #27ae60;"></i>
+                                    <div><p style="margin:0;">You created the circuit: <strong>${c.title}</strong></p></div>
+                                </div>`;
+                    });
+                    html += '</div>';
+                }
+                // --- END OF MISSING SECTION ---
+
+                // Render Owned Lounges
+                if (data.lounges && data.lounges.length > 0) {
+                    activityFound = true;
+                    html += '<div class="content-section"><h3>Lounges I Own</h3>';
+                    data.lounges.forEach(l => {
+                        html += `<div class="following-list-item" style="align-items: flex-start; cursor:pointer;" onclick="showLounge(${l.id}, '${l.name}')">
+                                    <i class="fas fa-users" style="margin-top: 5px; margin-right: 15px; color: #3498db;"></i>
+                                    <div><p style="margin:0;">You created the lounge: <strong>${l.name}</strong></p>
+                                    <span class="message-timestamp">${formatTimestamp(new Date(l.timestamp))}</span></div>
+                                </div>`;
+                    });
+                    html += '</div>';
+                }
+
+                container.innerHTML = html;
+                if (!activityFound) {
+                    container.innerHTML = '<p>No recent activity found.</p>';
+                }
+            });
+        }
         function showProfile(username) {
             const isMe = (username === 'me' || username === profileData.me.username);
             const userKey = isMe ? 'me' : username;
@@ -6537,17 +6979,11 @@
             .catch(err => console.error("Failed to fetch full profile:", err));
 
             // Logic for buttons and menus
-            const card = document.querySelector('#profile-page .profile-card');
             const headerRight = document.querySelector('#profile-page .header-right');
             headerRight.innerHTML = ''; // Clear old buttons/menu
 
             if (isMe) {
-                const editBtn = document.createElement('button');
-                editBtn.className = 'login-btn';
-                editBtn.textContent = 'Edit Profile';
-                editBtn.onclick = () => editProfile();
-                headerRight.appendChild(editBtn);
-            } else {
+                // --- THIS IS THE NEW MENU FOR YOUR OWN PROFILE ---
                 const menuButton = document.createElement('div');
                 menuButton.className = 'profile-menu-button';
                 menuButton.innerHTML = `<i class="fas fa-ellipsis-v"></i>`;
@@ -6555,20 +6991,12 @@
                 const menuDropdown = document.createElement('div');
                 menuDropdown.className = 'profile-menu-dropdown hidden';
                 menuDropdown.id = 'profile-menu-dropdown';
-
                 menuDropdown.innerHTML = `
-                    <a href="#" class="profile-menu-item" onclick="showReportPage('user', '${user.username}')">Report User</a>
-                    <a href="#" class="profile-menu-item" onclick="blockUser('${userKey}')">Block User</a>
+                    <a href="#" class="profile-menu-item" onclick="editProfile()">Edit Profile</a>
+                    <hr class="context-menu-divider">
+                    <a href="#" class="profile-menu-item" onclick="showMyActivityPage()">My Activity</a>
+                    <a href="#" class="profile-menu-item" onclick="showMyLoungesPage()">My Lounges</a>
                 `;
-
-                if (profileData.me.rank === 'admin') {
-                    menuDropdown.innerHTML += `
-                        <hr style="margin: 5px 0; border-color: #eee;">
-                        <a href="#" class="profile-menu-item admin-option" onclick="handleRankChange('${user.username}', 'admin')">Make Admin</a>
-                        <a href="#" class="profile-menu-item admin-option" onclick="handleRankChange('${user.username}', 'moderator')">Make Moderator</a>
-                        <a href="#" class="profile-menu-item admin-option" onclick="handleRankChange('${user.username}', 'user')">Make User</a>
-                    `;
-                }
 
                 headerRight.appendChild(menuButton);
                 headerRight.appendChild(menuDropdown);
@@ -6577,13 +7005,40 @@
                     event.stopPropagation();
                     menuDropdown.classList.toggle('hidden');
                 };
+                // --- END OF NEW MENU ---
+
+            } else {
+                // This is the existing menu for viewing other people's profiles
+                const menuButton = document.createElement('div');
+                menuButton.className = 'profile-menu-button';
+                menuButton.innerHTML = `<i class="fas fa-ellipsis-v"></i>`;
+                const menuDropdown = document.createElement('div');
+                menuDropdown.className = 'profile-menu-dropdown hidden';
+                menuDropdown.id = 'profile-menu-dropdown';
+                menuDropdown.innerHTML = `
+                    <a href="#" class="profile-menu-item" onclick="showReportPage('user', '${userKey}')">Report User</a>
+                    <a href="#" class="profile-menu-item" onclick="blockUser('${userKey}')">Block User</a>`;
+                if (profileData.me.rank === 'admin') {
+                    menuDropdown.innerHTML += `
+                        <hr style="margin: 5px 0; border-color: #eee;">
+                        <a href="#" class="profile-menu-item admin-option" onclick="handleRankChange('${userKey}', 'admin')">Make Admin</a>
+                        <a href="#" class="profile-menu-item admin-option" onclick="handleRankChange('${userKey}', 'moderator')">Make Moderator</a>
+                        <a href="#" class="profile-menu-item admin-option" onclick="handleRankChange('${userKey}', 'user')">Make User</a>`;
+                }
+                headerRight.appendChild(menuButton);
+                headerRight.appendChild(menuDropdown);
+                menuButton.onclick = (event) => {
+                    event.stopPropagation();
+                    menuDropdown.classList.toggle('hidden');
+                };
             }
 
+            const card = document.querySelector('#profile-page .profile-card');
             const oldButtons = card.querySelector('.profile-buttons');
             if (oldButtons) oldButtons.remove();
             if (!isMe) {
                 const isFollowing = followingList.includes(userKey);
-                 const buttonText = isFollowing ? 'Following' : 'Follow';
+                const buttonText = isFollowing ? 'Following' : 'Follow';
                 const buttonClass = isFollowing ? 'follow-btn following' : 'follow-btn';
                 const buttonsHTML = `<div class="profile-buttons"><button onclick="openChat('${userKey}')">Message</button><button class="${buttonClass}" onclick="toggleFollow(this, '${userKey}')">${buttonText}</button></div>`;
                 card.insertAdjacentHTML('beforeend', buttonsHTML);
@@ -7182,46 +7637,45 @@
 
         function renderAllLoungesGrid() {
             fetch(`${API_BASE_URL}/api/lounges`, { headers: { 'Authorization': `Bearer ${apiToken}` } })
-                .then(response => response.json())
-                .then(lounges => {
-                    const grid = document.getElementById('all-lounges-grid');
-                    grid.innerHTML = '';
+            .then(response => response.json())
+            .then(lounges => {
+                const grid = document.getElementById('all-lounges-grid');
+                grid.innerHTML = '';
 
-                    const createCard = document.createElement('div');
-                    createCard.className = 'circuit-card create-circuit-card';
-                    createCard.onclick = () => showCreateLoungePage(); // Use new setup function
-                    createCard.innerHTML = `<h4>+</h4><p>New Lounge</p>`;
-                    grid.appendChild(createCard);
+                const createCard = document.createElement('div');
+                createCard.className = 'circuit-card create-circuit-card';
+                createCard.onclick = () => showCreateLoungePage();
+                createCard.innerHTML = `<h4>+</h4><p>New Lounge</p>`;
+                grid.appendChild(createCard);
 
-                    lounges.forEach(lounge => {
-                        const card = document.createElement('div');
-                        card.className = 'circuit-card';
-                        card.onclick = () => showLounge(lounge.id, lounge.name);
-                        
-                        // --- NEW LOGIC for cover image and privacy icon ---
-                        if (lounge.cover_image) {
-                            card.style.backgroundImage = `url(${lounge.cover_image})`;
-                        } else {
-                            card.classList.add('no-image');
-                        }
-
-                        let privacyIcon = '';
-                        if (lounge.privacy === 'private') {
-                            privacyIcon = '<i class="fas fa-lock" style="position: absolute; top: 10px; right: 10px; color: white; text-shadow: 1px 1px 2px black; font-size: 0.8em;"></i>';
-                        } else if (lounge.privacy === 'unlisted') {
-                            privacyIcon = '<i class="fas fa-link" style="position: absolute; top: 10px; right: 10px; color: white; text-shadow: 1px 1px 2px black; font-size: 0.8em;"></i>';
-                        }
-                        
-                        card.innerHTML = `
-                            <h4>${lounge.name}</h4>
-                            <p>${lounge.description}</p>
-                            ${privacyIcon}
-                        `;
-                        // --- END OF NEW LOGIC ---
-
-                        grid.appendChild(card);
-                    });
+                lounges.forEach(lounge => {
+                    const card = document.createElement('div');
+                    card.className = 'circuit-card';
+                    card.onclick = () => showLounge(lounge.id, lounge.name);
+                    
+                    if (lounge.cover_image) {
+                        card.style.backgroundImage = `url(${lounge.cover_image})`;
+                    } else {
+                        card.classList.add('no-image');
+                    }
+                    
+                    let privacyIcon = ''; // (privacy icon logic is unchanged)
+                    if (lounge.privacy === 'private') {
+                        privacyIcon = '<i class="fas fa-lock" style="position: absolute; top: 10px; right: 10px; color: white; text-shadow: 1px 1px 2px black; font-size: 0.8em;"></i>';
+                    } else if (lounge.privacy === 'unlisted') {
+                        privacyIcon = '<i class="fas fa-link" style="position: absolute; top: 10px; right: 10px; color: white; text-shadow: 1px 1px 2px black; font-size: 0.8em;"></i>';
+                    }
+                    
+                    // --- THIS PART IS UPDATED ---
+                    card.innerHTML = `
+                        <h4>${truncate(lounge.name, 10)}</h4>
+                        <p>${truncate(lounge.description, 15)}</p>
+                        ${privacyIcon}
+                    `;
+                    // --- END UPDATE ---
+                    grid.appendChild(card);
                 });
+            });
         }
 
         function showTosPage() {
@@ -7286,9 +7740,20 @@
             const currentScrollPosition = chatBody.scrollTop;
             chatBody.innerHTML = '';
             const msgs = messageHistory[currentChatRecipient] || [];
+            let lastMessageDate = null; // <-- THIS LINE WAS ALSO MISSING HERE.
 
             msgs.forEach((msg, index) => {
-                // ... (The beginning of the function for creating msgEl and messageRow is the same) ...
+                // --- DATE SEPARATOR LOGIC (Now works correctly) ---
+                const currentMessageDate = new Date(msg.time).toDateString();
+                if (currentMessageDate !== lastMessageDate) {
+                    const separator = document.createElement('div');
+                    separator.className = 'chat-context-separator';
+                    separator.textContent = formatDateSeparator(msg.time);
+                    chatBody.appendChild(separator);
+                    lastMessageDate = currentMessageDate;
+                }
+
+                // --- REGULAR DM LOGIC (Will now execute correctly) ---
                 const prevMsg = msgs[index - 1];
                 const isNewGroup = !prevMsg || (msg.sender !== prevMsg.sender) || ((new Date(msg.time) - new Date(prevMsg.time)) / (1000 * 60) > 3);
 
@@ -7674,39 +8139,30 @@
         function handleCreateCircuit() {
             const title = document.getElementById('circuitTitle').value.trim();
             const host = document.getElementById('circuitHost').value.trim();
-            // Use the temporary URL from our variable (newCircuitCoverUrl)
             const coverImage = newCircuitCoverUrl;
 
             if (!title || !host) {
-                alert('Please fill in the title and its association.');
+                showToast('Please fill in the title and its association.', 'error');
                 return;
             }
 
-            // Send the data to our new server endpoint
             fetch(`${API_BASE_URL}/api/circuits`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiToken}`
-                },
-                body: JSON.stringify({
-                    title: title,
-                    hostSchool: host,
-                    coverImage: coverImage
-                })
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiToken}` },
+                body: JSON.stringify({ title: title, hostSchool: host, coverImage: coverImage })
             })
             .then(response => response.json().then(data => ({ status: response.status, body: data })))
             .then(({ status, body }) => {
-                if (status === 201) { // 201 means "Created"
-                    alert(`Circuit "${body.circuit.title}" created successfully!`);
-                    showPage('explore-page'); // Go back to the explore page to see the new circuit
+                if (status === 201) {
+                    showToast(`Circuit "${body.circuit.title}" created successfully!`, 'success');
+                    showPage('explore-page');
                 } else {
-                    alert('Error: ' + (body.error || 'Could not create circuit.'));
+                    showToast(body.error || 'Could not create circuit.', 'error');
                 }
             })
             .catch(error => {
                 console.error("Error creating circuit:", error);
-                alert("An error occurred. Please try again.");
+                showToast("An error occurred. Please try again.", 'error');
             });
         }
 
@@ -7779,38 +8235,33 @@
         }
 
         function handleDeleteCircuit(circuitId) {
-            // Hide the three-dot menu first
             const menu = document.getElementById('circuit-menu-dropdown');
             if (menu) menu.classList.add('hidden');
 
-            // Show a confirmation dialog because this is a destructive action
-            const confirmationMessage = "Are you sure you want to permanently delete this circuit and all of its posts? This action cannot be undone.";
-            if (!confirm(confirmationMessage)) {
-                return; // Stop if the user clicks "Cancel"
-            }
-
-            // Send the DELETE request to the new server endpoint
-            fetch(`${API_BASE_URL}/api/circuit/${circuitId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${apiToken}`
+            showConfirmationModal({
+                title: 'Delete Circuit?',
+                text: 'Are you sure you want to permanently delete this circuit and all of its posts? This action cannot be undone.',
+                onConfirm: () => {
+                    fetch(`${API_BASE_URL}/api/circuit/${circuitId}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${apiToken}` }
+                    })
+                    .then(response => response.json().then(data => ({ status: response.status, body: data })))
+                    .then(({ status, body }) => {
+                        if (status === 200 && body.ok) {
+                            showToast('Circuit deleted successfully.', 'success');
+                            showPage('explore-page');
+                        } else {
+                            showToast(body.error || 'Could not delete the circuit.', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error deleting circuit:", error);
+                        showToast("An error occurred. Please try again.", 'error');
+                    });
                 }
-            })
-            .then(response => response.json().then(data => ({ status: response.status, body: data })))
-            .then(({ status, body }) => {
-                if (status === 200 && body.ok) {
-                    alert('Circuit deleted successfully.');
-                    showPage('explore-page'); // Navigate back to the explore page
-                } else {
-                    alert('Error: ' + (body.error || 'Could not delete the circuit.'));
-                }
-            })
-            .catch(error => {
-                console.error("Error deleting circuit:", error);
-                alert("An error occurred. Please try again.");
             });
         }
-
         function showCircuit(circuitId, title, hostSchool) {
             fetch(`${API_BASE_URL}/api/circuit/${circuitId}/view`, { method: 'POST', headers: { 'Authorization': `Bearer ${apiToken}` } });
             currentCircuitId = circuitId;
@@ -7954,7 +8405,7 @@
         }
 
         function setLoungeRole(username, newRole) {
-            document.querySelectorAll('.context-menu').forEach(menu => menu.remove()); // Close menu
+            document.querySelectorAll('.context-menu').forEach(menu => menu.remove());
 
             fetch(`${API_BASE_URL}/api/lounge/${currentLoungeId}/member/${username}/role`, {
                 method: 'PUT',
@@ -7964,31 +8415,42 @@
             .then(response => response.json())
             .then(data => {
                 if (data.ok) {
-                    alert(data.message);
-                    // Refresh the members list to show the new role
+                    showToast(data.message, 'success');
                     showLoungeMembers();
                 } else {
-                    alert('Error: ' + data.error);
+                    showToast(data.error, 'error');
                 }
             });
         }
 
         function deleteLoungeChannel(channelId) {
-            if (confirm('Are you sure you want to permanently delete this channel and all its messages?')) {
-                fetch(`${API_BASE_URL}/api/lounge/channel/${channelId}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${apiToken}` }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.ok) {
-                        // Refresh the lounge view
-                        showLounge(currentLoungeId, document.getElementById('lounge-header-title').textContent);
-                    } else {
-                        alert('Error: ' + data.error);
-                    }
-                });
-            }
+            // Instead of a browser confirm(), we call our custom modal
+            showConfirmationModal({
+                title: 'Delete Channel?',
+                text: 'Are you sure you want to permanently delete this channel and all its messages?',
+                onConfirm: () => {
+                    // The fetch request is now inside the onConfirm callback
+                    fetch(`${API_BASE_URL}/api/lounge/channel/${channelId}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${apiToken}` }
+                    })
+                    .then(response => response.json().then(data => ({ status: response.status, body: data })))
+                    .then(({ status, body }) => {
+                        if (status === 200 && body.ok) {
+                            showToast(body.message, 'success');
+                            // Refresh the lounge view to show the updated channel list
+                            showLounge(currentLoungeId, document.getElementById('lounge-header-title').textContent);
+                        } else {
+                            // Use the toast for errors instead of an alert
+                            showToast(body.error || 'Could not delete channel.', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error deleting channel:", error);
+                        showToast("An unexpected error occurred.", 'error');
+                    });
+                }
+            });
         }
 
         function getAccountTypeTag(accountType) {
@@ -8019,14 +8481,36 @@
             const chatBody = document.getElementById('lounge-body');
             const currentScrollPosition = chatBody.scrollTop;
             chatBody.innerHTML = '';
+            let lastMessageDate = null; // <-- THIS LINE WAS MISSING. THIS IS THE FIX.
 
             messages.forEach((msg, index) => {
+                // --- DATE SEPARATOR LOGIC (Now works correctly) ---
+                const currentMessageDate = new Date(msg.timestamp).toDateString();
+                if (currentMessageDate !== lastMessageDate) {
+                    const separator = document.createElement('div');
+                    separator.className = 'chat-context-separator';
+                    separator.textContent = formatDateSeparator(msg.timestamp);
+                    chatBody.appendChild(separator);
+                    lastMessageDate = currentMessageDate;
+                }
+
+                // --- SYSTEM MESSAGE LOGIC (Will now execute correctly) ---
+                if (msg.message_type === 'system_event') {
+                    const eventEl = document.createElement('div');
+                    eventEl.className = 'system-message';
+                    eventEl.textContent = msg.text;
+                    chatBody.appendChild(eventEl);
+                    return; // Skip the rest for system messages
+                }
+
+                // --- REGULAR MESSAGE LOGIC (Will now execute correctly) ---
                 const prevMsg = messages[index - 1];
                 const isNewGroup = !prevMsg || msg.author.username !== prevMsg.author.username || ((new Date(msg.timestamp) - new Date(prevMsg.timestamp)) / (1000 * 60) > 3);
                 const isSentByMe = msg.author.username === profileData.me.username;
                 const senderClass = isSentByMe ? 'sent' : 'received';
 
                 const msgEl = document.createElement('div');
+
                 msgEl.className = `chat-message ${senderClass} ${isNewGroup ? 'new-group' : ''}`;
 
                 const messageRow = document.createElement('div');
@@ -8170,6 +8654,34 @@
             showPage('report-page');
         }
 
+        function handleDeleteLounge() {
+            document.getElementById('lounge-menu-dropdown').classList.add('hidden');
+
+            showConfirmationModal({
+                title: 'Delete Lounge?',
+                text: 'Are you sure you want to permanently delete this lounge and all of its channels and messages? This action cannot be undone.',
+                onConfirm: () => {
+                    fetch(`${API_BASE_URL}/api/lounge/${currentLoungeId}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${apiToken}` }
+                    })
+                    .then(response => response.json().then(data => ({ status: response.status, body: data })))
+                    .then(({ status, body }) => {
+                        if (status === 200) {
+                            showToast(body.message, 'success');
+                            showPage('index-page');
+                        } else {
+                            showToast(body.error || 'Could not delete the lounge.', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error deleting lounge:', error);
+                        showToast('An unexpected error occurred.', 'error');
+                    });
+                }
+            });
+        }
+
         function showEditCircuitPage(circuitId) {
             fetch(`${API_BASE_URL}/api/circuit/${circuitId}`, {
                 headers: { 'Authorization': `Bearer ${apiToken}` }
@@ -8210,33 +8722,25 @@
         function handleEditCircuit() {
             const title = document.getElementById('editCircuitTitle').value.trim();
             const hostSchool = document.getElementById('editCircuitHost').value.trim();
-            const coverImage = newCircuitCoverUrl; // This is updated when the user selects a new file
+            const coverImage = newCircuitCoverUrl;
 
             if (!title || !hostSchool) {
-                alert('Title and Host School cannot be empty.');
+                showToast('Title and Host School cannot be empty.', 'error');
                 return;
             }
 
             fetch(`${API_BASE_URL}/api/circuit/${currentCircuitId}`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiToken}`
-                },
-                body: JSON.stringify({
-                    title: title,
-                    hostSchool: hostSchool,
-                    coverImage: coverImage
-                })
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiToken}` },
+                body: JSON.stringify({ title: title, hostSchool: hostSchool, coverImage: coverImage })
             })
             .then(response => response.json().then(data => ({ status: response.status, body: data })))
             .then(({ status, body }) => {
                 if (status === 200 && body.ok) {
-                    alert('Circuit updated successfully!');
-                    // Refresh the circuit page to show changes
+                    showToast('Circuit updated successfully!', 'success');
                     showCircuit(currentCircuitId, title, hostSchool);
                 } else {
-                    alert('Error: ' + (body.error || 'Could not update circuit.'));
+                    showToast(body.error || 'Could not update circuit.', 'error');
                 }
             })
             .catch(error => console.error("Error updating circuit:", error));
@@ -8253,7 +8757,56 @@
         
         function toggleLoungeMenu(event) {
             event.stopPropagation();
-            document.getElementById('lounge-menu-dropdown').classList.toggle('hidden');
+            const menu = document.getElementById('lounge-menu-dropdown');
+            menu.innerHTML = ''; // Clear the menu before building it
+
+            // Add items that are always visible
+            menu.innerHTML += `<a href="#" class="profile-menu-item" onclick="showLoungeMembers()">Show Members</a>`;
+            menu.innerHTML += `<a href="#" class="profile-menu-item" onclick="showLoungeDetails()">Show Details</a>`;
+            
+            // Conditionally add the "Leave Lounge" option for members and moderators
+            if (currentUserLoungeRole === 'member' || currentUserLoungeRole === 'moderator') {
+                menu.innerHTML += `<hr class="context-menu-divider">`;
+                menu.innerHTML += `<a href="#" class="profile-menu-item danger" onclick="handleLeaveLounge()">Leave Lounge</a>`;
+            }
+
+            // --- NEW LOGIC: Add "Delete Lounge" for the owner ---
+            if (currentUserLoungeRole === 'owner') {
+                menu.innerHTML += `<hr class="context-menu-divider">`;
+                menu.innerHTML += `<a href="#" class="profile-menu-item danger" onclick="handleDeleteLounge()">Delete Lounge</a>`;
+            }
+            // --- END OF NEW LOGIC ---
+
+            menu.classList.toggle('hidden');
+        }
+
+        function handleLeaveLounge() {
+            document.getElementById('lounge-menu-dropdown').classList.add('hidden');
+
+            showConfirmationModal({
+                title: 'Leave Lounge?',
+                text: 'Are you sure you want to permanently leave this lounge?',
+                onConfirm: () => {
+                    // The fetch request is now inside the onConfirm callback
+                    fetch(`${API_BASE_URL}/api/lounge/${currentLoungeId}/leave`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${apiToken}` }
+                    })
+                    .then(response => response.json().then(data => ({ status: response.status, body: data })))
+                    .then(({ status, body }) => {
+                        if (status === 200) {
+                            showToast(body.message, 'success');
+                            showPage('index-page');
+                        } else {
+                            showToast(body.error || 'Could not leave the lounge.', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error leaving lounge:', error);
+                        showToast('An unexpected error occurred. Please try again.', 'error');
+                    });
+                }
+            });
         }
 
         function showImagePreview(base64Url, type) {
@@ -8275,6 +8828,31 @@
             container.classList.remove('hidden');
         }
 
+        function showConfirmationModal({ title, text, onConfirm }) {
+            const modal = document.getElementById('confirmation-modal');
+            document.getElementById('confirm-modal-title').textContent = title;
+            document.getElementById('confirm-modal-text').textContent = text;
+
+            const confirmBtn = document.getElementById('confirm-modal-btn');
+
+            // This is a clean way to replace old listeners to avoid bugs
+            const newConfirmBtn = confirmBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+            newConfirmBtn.onclick = () => {
+                if (typeof onConfirm === 'function') {
+                    onConfirm();
+                }
+                closeConfirmationModal();
+            };
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeConfirmationModal() {
+            document.getElementById('confirmation-modal').classList.add('hidden');
+        }
+
         function removeImagePreview(type) {
             const isDM = type === 'dm';
             const container = document.getElementById(isDM ? 'dm-image-preview-container' : 'lounge-image-preview-container');
@@ -8289,36 +8867,55 @@
             container.classList.add('hidden');
         }
 
-        function openChannelContextMenu(event, channelId, channelName) {
+        function handleSetMainChannel(channelId) {
+            fetch(`${API_BASE_URL}/api/lounge/channel/${channelId}/set-main`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${apiToken}` }
+            })
+            .then(response => response.json().then(data => ({ status: response.status, body: data })))
+            .then(({ status, body }) => {
+                if (status === 200) {
+                    showToast(body.message, 'success');
+                    // Refresh the whole lounge view to show the new channel order and icon
+                    showLounge(currentLoungeId, document.getElementById('lounge-header-title').textContent);
+                } else {
+                    showToast(body.error || 'Could not update main channel.', 'error');
+                }
+            });
+        }
+
+        function openChannelContextMenu(event, channel) { // Takes the full channel object now
             event.stopPropagation();
-            // Close any existing context menus first
             document.querySelectorAll('.context-menu').forEach(menu => menu.remove());
 
             const menu = document.createElement('div');
             menu.className = 'context-menu';
 
-            // Menu Items
-            let menuItems = `<a class="context-menu-item" onclick="showLoungeDetails()">Show Description</a>`;
+            let menuItems = '';
             if (currentUserLoungeRole === 'owner' || currentUserLoungeRole === 'moderator') {
+                // ▼▼▼ NEW LOGIC: Show "Make Main" only if it's NOT already main ▼▼▼
+                if (!channel.is_main) {
+                    menuItems += `<a class="context-menu-item" onclick="handleSetMainChannel(${channel.id})"><i class="fas fa-star" style="margin-right: 8px;"></i>Make Main Channel</a>`;
+                }
+                // ▲▲▲ END NEW LOGIC ▲▲▲
                 menuItems += `
-                    <a class="context-menu-item" onclick="editLoungeChannel(${channelId})">Edit Name</a>
-                    <a class="context-menu-item danger" onclick="deleteLoungeChannel(${channelId})">Delete Channel</a>
+                    <a class="context-menu-item" onclick="editLoungeChannel(${channel.id})">Edit Name</a>
+                    <a class="context-menu-item danger" onclick="deleteLoungeChannel(${channel.id})">Delete Channel</a>
                 `;
+            } else {
+                menuItems = `<a class="context-menu-item" onclick="showLoungeDetails()">Show Description</a>`;
             }
             menu.innerHTML = menuItems;
 
             document.body.appendChild(menu);
 
-            // Position the menu by the cursor
+            // Positioning logic (unchanged)
             const menuWidth = menu.offsetWidth;
             const menuHeight = menu.offsetHeight;
             let x = event.pageX;
             let y = event.pageY;
-
-            // Prevent menu from going off-screen
             if (x + menuWidth > window.innerWidth) x -= menuWidth;
             if (y + menuHeight > window.innerHeight) y -= menuHeight;
-
             menu.style.left = `${x}px`;
             menu.style.top = `${y}px`;
         }
@@ -8555,10 +9152,7 @@
         }
 
         function toggleLike(event, postId) {
-            // This stops the click from bubbling up to other elements, which is good practice.
             event.stopPropagation();
-
-            // Find all like containers for this post (one on the grid, one in the modal)
             const likeContainers = document.querySelectorAll(`[data-like-container-id="${postId}"]`);
             if (likeContainers.length === 0) return;
 
@@ -8573,27 +9167,21 @@
             .then(response => response.json().then(data => ({ status: response.status, body: data })))
             .then(({ status, body }) => {
                 if (status === 200 && body.ok) {
-                    // Update the local data for the source of truth
                     const post = currentCircuitPosts.find(p => p.id === postId);
                     if (post) {
                         post.likes = body.likes;
                         post.is_liked_by_me = !isLiked;
                     }
-
-                    // Update ALL UI elements for this post
                     likeContainers.forEach(container => {
-                        const btn = container.querySelector('.like-button');
-                        const countSpan = container.querySelector('.like-count');
-                        btn.classList.toggle('liked');
-                        countSpan.textContent = body.likes;
+                        container.querySelector('.like-button').classList.toggle('liked');
+                        container.querySelector('.like-count').textContent = body.likes;
                     });
                 } else {
-                    alert('Error: ' + (body.error || 'Action failed'));
+                    showToast(body.error || 'Action failed', 'error');
                 }
             })
             .catch(err => console.error("Like error:", err));
-
-     }
+        }
 
         function updateNotificationBadge() {
             const badge = document.getElementById('message-notification-badge');
@@ -8700,43 +9288,38 @@
 
         function handleCreatePost() {
             const text = document.getElementById('postText').value.trim();
-            // The image is already stored in the newPostImageUrl global variable
             const image = newPostImageUrl;
 
-            if (!text && !image) { // A post must have either text or an image
-                alert('Please add some text or an image for your post.');
+            if (!text && !image) {
+                showToast('Please add some text or an image for your post.', 'error');
                 return;
             }
             if (!currentCircuitId) {
-                alert('Error: No circuit selected.');
+                showToast('Error: No circuit selected.', 'error');
                 return;
             }
 
             fetch(`${API_BASE_URL}/api/circuit/${currentCircuitId}/posts`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiToken}`
-                },
-                body: JSON.stringify({ text: text, image: image }) // Send the image data
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiToken}` },
+                body: JSON.stringify({ text: text, image: image })
             })
             .then(response => response.json().then(data => ({ status: response.status, body: data })))
             .then(({ status, body }) => {
                 if (status === 201) {
-                    fetch(`${API_BASE_URL}/api/circuit/${currentCircuitId}`, {
-                        headers: { 'Authorization': `Bearer ${apiToken}` }
-                    })
+                    showToast('Post created successfully!', 'success');
+                    fetch(`${API_BASE_URL}/api/circuit/${currentCircuitId}`, { headers: { 'Authorization': `Bearer ${apiToken}` } })
                     .then(res => res.json())
                     .then(circuitDetails => {
                         showCircuit(currentCircuitId, circuitDetails.title, circuitDetails.hostSchool);
                     });
                 } else {
-                    alert('Error creating post: ' + (body.error || 'Unknown error.'));
+                    showToast('Error creating post: ' + (body.error || 'Unknown error.'), 'error');
                 }
             })
             .catch(error => {
                 console.error("Error creating post:", error);
-                alert("An error occurred. Could not create post.");
+                showToast("An error occurred. Could not create post.", 'error');
             });
         }
 
