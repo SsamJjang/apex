@@ -312,6 +312,31 @@ def delete_lounge(lounge_id):
 
     return jsonify({"ok": True, "message": "Lounge has been permanently deleted."})
 
+def _post_lounge_join_message(user_id, lounge_id):
+    """Helper to post a system message when a user joins a lounge."""
+    user = User.query.get(user_id)
+    if not user: return
+
+    main_channel = LoungeChannel.query.filter_by(lounge_id=lounge_id, is_main=True).first()
+    if not main_channel: return
+
+    system_message = LoungeMessage(
+        text=f"{user.username} joined the lounge.",
+        user_id=user.id,
+        channel_id=main_channel.id,
+        message_type='system_event'
+    )
+    db.session.add(system_message)
+    db.session.commit()
+
+    message_payload = {
+        "id": system_message.id, "text": system_message.text, "image": None,
+        "timestamp": system_message.timestamp.isoformat(), "channel_id": main_channel.id,
+        "reactions": {}, "message_type": system_message.message_type,
+        "author": { "username": user.username, "fullName": user.full_name, "profilePic": user.profile_pic, "rank": user.rank }
+    }
+    socketio.emit('new_lounge_message', message_payload, room=f"channel_{main_channel.id}")
+
 def get_lounge_role(user_id, lounge_id):
     membership = LoungeMember.query.filter_by(user_id=user_id, lounge_id=lounge_id).first()
     return membership.role if membership else None
@@ -763,6 +788,7 @@ def set_conversation_theme(username):
     return jsonify({"ok": True, "message": f"Theme set to {theme}"})
 
 
+
 @app.get("/api/notifications")
 def get_notifications():
     user = auth_user()
@@ -774,7 +800,7 @@ def get_notifications():
     for notif in notifications:
         message = "A new notification."
         actor_username = notif.actor.username if notif.actor else None
-        actionable = notif.event_type == 'lounge_invite' and notif.status == 'pending'
+        actionable = notif.status == 'pending' and notif.event_type in ['lounge_invite', 'lounge_access_request']
 
         notif_dict = {
             "id": notif.id,
@@ -799,14 +825,14 @@ def get_notifications():
             else:
                 message = f"**{notif.actor.username}** liked your post."
 
-        elif notif.event_type == 'lounge_invite' and notif.actor:
+        elif notif.event_type == 'lounge_access_accepted' and notif.actor:
             lounge = Lounge.query.get(notif.reference_id)
             if lounge:
-                message = f"**{notif.actor.username}** invited you to join the lounge: **{lounge.name}**."
+                message = f"**{notif.actor.username}** accepted your request to join **{lounge.name}**."
                 notif_dict["reference_type"] = "lounge"
                 notif_dict["reference_details"] = {"lounge_id": lounge.id, "lounge_name": lounge.name}
             else:
-                message = "You were invited to a lounge that no longer exists."
+                message = f"Your request to join a lounge was accepted."
         
         notif_dict["message"] = message
         notif_list.append(notif_dict)
@@ -964,41 +990,128 @@ def get_lounge_members(lounge_id):
     ]
     return jsonify(member_list)
 
+# In server.py, add this new function
+
+@app.post("/api/lounge/<int:lounge_id>/request-access")
+def request_lounge_access(lounge_id):
+    user = auth_user()
+    if not user: return jsonify({"error": "unauthorized"}), 401
+
+    lounge = Lounge.query.get(lounge_id)
+    if not lounge: return jsonify({"error": "Lounge not found"}), 404
+    if lounge.privacy != 'private': return jsonify({"error": "This lounge is not private."}), 400
+    if get_lounge_role(user.id, lounge_id): return jsonify({"error": "You are already a member."}), 409
+
+    # Prevent spamming requests by checking for an existing pending one
+    existing_request = Notification.query.filter_by(
+        actor_id=user.id,
+        event_type='lounge_access_request',
+        reference_id=lounge_id,
+        status='pending'
+    ).first()
+    if existing_request:
+        return jsonify({"error": "You have already requested to join this lounge."}), 409
+
+    # Create the notification for the lounge owner
+    notification = Notification(
+        user_id=lounge.owner_id,
+        event_type='lounge_access_request',
+        actor_id=user.id,
+        reference_id=lounge_id,
+        status='pending'
+    )
+    db.session.add(notification)
+    db.session.commit()
+    socketio.emit("new_notification", room=f"user_{lounge.owner_id}")
+
+    return jsonify({"ok": True, "message": "Your request has been sent to the lounge owner."})
+
 @app.get("/api/lounges")
 def get_lounges():
     user = auth_user()
     if not user:
         return jsonify({"error": "unauthorized"}), 401
 
-    # Query 1: Get all public and unlisted lounges
-    public_lounges = Lounge.query.filter(Lounge.privacy == 'public')
-
-
-    # Query 2: Get all private lounges the user is a member of
-    private_lounges_member_of = Lounge.query.join(LoungeMember).filter(
-        Lounge.privacy == 'private',
-        LoungeMember.user_id == user.id
-    )
-
-    # Combine the queries
-    accessible_lounges = public_lounges.union(private_lounges_member_of).order_by(Lounge.created_at.desc()).all()
+    # --- THIS IS THE FIX ---
+    # This single query now fetches ALL lounges, regardless of privacy.
+    # The frontend will handle the logic for how to display them.
+    all_lounges = Lounge.query.order_by(Lounge.created_at.desc()).all()
+    # --- END OF FIX ---
 
     lounge_list = [
         {
             "id": lounge.id,
             "name": lounge.name,
             "description": lounge.description,
-            # --- SEND NEW FIELDS TO FRONTEND ---
             "cover_image": lounge.cover_image,
             "privacy": lounge.privacy
-        } for lounge in accessible_lounges
+        } for lounge in all_lounges
     ]
     return jsonify(lounge_list)
-
 # In server.py, find and REPLACE your join_lounge function
 
+@app.get("/api/lounge/<int:lounge_id>/potential-invitees")
+def get_potential_invitees(lounge_id):
+    user = auth_user()
+    if not user: return jsonify({"error": "unauthorized"}), 401
+    
+    # Get the search term from the request, if any
+    search_term = request.args.get('q', '').strip()
 
+    # Step 1: Find all user IDs that are ALREADY in the lounge.
+    subquery = db.session.query(LoungeMember.user_id).filter(LoungeMember.lounge_id == lounge_id)
+
+    # Step 2: Query for users who are NOT in that list of IDs.
+    # Also exclude the current user and system accounts.
+    query = User.query.filter(
+        User.id.notin_(subquery),
+        User.id != user.id,
+        User.username != "ANNOUNCEMENTS"
+    )
+
+    # Step 3: If there's a search term, filter by username or full name.
+    if search_term:
+        search_filter = or_(
+            User.username.ilike(f'%{search_term}%'),
+            User.full_name.ilike(f'%{search_term}%')
+        )
+        query = query.filter(search_filter)
+
+    # Step 4: Limit the results to avoid sending too much data.
+    potential_invitees = query.limit(20).all()
+
+    # Step 5: Format and return the results.
+    user_list = [
+        {
+            "username": u.username,
+            "fullName": u.full_name,
+            "profile_pic": u.profile_pic,
+            "rank": u.rank
+        } for u in potential_invitees
+    ]
+    return jsonify(user_list)
 # In server.py, REPLACE your existing join_lounge function
+
+@app.get("/api/me/lounges")
+def get_my_lounges():
+    user = auth_user()
+    if not user: return jsonify({"error": "unauthorized"}), 401
+
+    # Find all lounges where the current user is a member
+    my_lounges = Lounge.query.join(LoungeMember).filter(
+        LoungeMember.user_id == user.id
+    ).order_by(Lounge.name.asc()).all()
+
+    lounge_list = [{
+        "id": lounge.id,
+        "name": lounge.name,
+        "description": lounge.description,
+        "cover_image": lounge.cover_image,
+        "privacy": lounge.privacy
+    } for lounge in my_lounges]
+
+    return jsonify(lounge_list)
+
 
 @app.post("/api/lounge/<int:lounge_id>/join")
 def join_lounge(lounge_id):
@@ -1714,17 +1827,45 @@ def respond_to_notification(notification_id):
     data = request.get_json(force=True)
     action = data.get("action")
 
-    if action == "accept":
-        if notification.event_type == 'lounge_invite':
-            lounge_id = notification.reference_id
-            if not get_lounge_role(user.id, lounge_id):
-                new_member = LoungeMember(user_id=user.id, lounge_id=lounge_id, role='member')
-                db.session.add(new_member)
-            notification.status = 'accepted'
-    elif action == "decline":
-        notification.status = 'declined'
-    else:
+    if action not in ["accept", "decline"]:
         return jsonify({"error": "Invalid action"}), 400
+
+    if notification.event_type == 'lounge_invite':
+        lounge_id = notification.reference_id
+        if action == "accept":
+            if not get_lounge_role(user.id, lounge_id):
+                db.session.add(LoungeMember(user_id=user.id, lounge_id=lounge_id, role='member'))
+                db.session.flush() # Ensure membership is saved before posting message
+                _post_lounge_join_message(user.id, lounge_id) # Post "joined" message
+        notification.status = 'accepted' if action == 'accept' else 'declined'
+
+    elif notification.event_type == 'lounge_access_request':
+        lounge_id = notification.reference_id
+        requester_id = notification.actor_id
+        lounge = Lounge.query.get(lounge_id)
+        
+        if not lounge or lounge.owner_id != user.id:
+            return jsonify({"error": "Forbidden or lounge not found."}), 403
+
+        if action == "accept":
+            if not get_lounge_role(requester_id, lounge_id):
+                db.session.add(LoungeMember(user_id=requester_id, lounge_id=lounge_id, role='member'))
+                db.session.flush() # Ensure membership is saved
+                _post_lounge_join_message(requester_id, lounge_id) # Post "joined" message
+
+            # --- NEW: Notify the requester that they were accepted ---
+            accepted_notification = Notification(
+                user_id=requester_id,
+                event_type='lounge_access_accepted',
+                actor_id=user.id,
+                reference_id=lounge_id,
+                status='accepted'
+            )
+            db.session.add(accepted_notification)
+            socketio.emit("new_notification", room=f"user_{requester_id}")
+            # --- END NEW ---
+        
+        notification.status = 'accepted' if action == 'accept' else 'declined'
 
     notification.is_read = True
     db.session.commit()

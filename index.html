@@ -939,7 +939,7 @@
             display: none;
         }
 
-        #emoji-panel span {
+        .emoji-panel span {
             cursor: pointer;
             font-size: 1.5em;
             text-align: center;
@@ -1938,6 +1938,11 @@
             background-color: #fff;
             padding: 40px;
             border-radius: 20px;
+            /* --- THIS IS THE FIX --- */
+            display: flex;             /* Activates flexbox layout */
+            flex-direction: column;    /* Stacks items vertically */
+            align-items: center;       /* Centers all items horizontally */
+            /* --- END OF FIX --- */
             box-shadow: 0 10px 40px rgba(0,0,0,0.1);
             z-index: 2;
             max-width: 450px;
@@ -1968,6 +1973,7 @@
             padding: 12px 30px;
             font-size: 1.1em;
             font-weight: bold;
+            align-items: center;
             border: none;
             border-radius: 50px;
             color: #fff;
@@ -2728,6 +2734,26 @@
         }
         .circuit-post:hover .like-button-container {
             opacity: 1; /* Show on hover */
+        }
+
+        .chat-message img {
+            cursor: pointer; /* Indicates that the image is clickable */
+            transition: opacity 0.2s ease;
+        }
+        .chat-message img:hover {
+            opacity: 0.85; /* A subtle hover effect */
+        }
+        #image-viewer-content {
+            /* --- THIS IS THE FIX --- */
+            max-width: 90vw;   /* Use max-width to constrain large images */
+            max-height: 90vh;  /* Use max-height to constrain large images */
+            object-fit: contain;
+            /* --- END OF FIX --- */
+
+            border-radius: 8px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.5);
+            animation: zoomIn 0.3s ease;
+            cursor: default;
         }
         .like-button {
             background: none;
@@ -3700,6 +3726,21 @@
             opacity: 1; /* Show on hover */
         }
 
+        .modal-search-bar-container {
+            padding: 15px;
+            border-bottom: 1px solid #dbdbdb;
+        }
+
+        .modal-search-bar-container .group {
+            max-width: 100%; /* Ensure it fits the modal */
+        }
+
+        /* This positions the SVG icon correctly inside the modal's search bar */
+        .modal-search-bar-container .icon {
+            left: 1rem;
+            transform: translateY(-50%) scale(0.8);
+        }
+
         .post-stat i {
             margin-right: 5px;
         }
@@ -4539,16 +4580,9 @@
                 <a href="#" class="fancy-back-button" onclick="showPage('index-page')"><i class="fas fa-arrow-left"></i> Back</a>
             </div>
             <div class="header-center"><p id="lounge-header-title">The Lounge</p></div>
+
             <div class="header-right"></div>
-            <div class="header-right">
-            <div class="profile-menu-button" onclick="toggleLoungeMenu(event)">
-                <i class="fas fa-ellipsis-v"></i>
-            </div>
-            <div id="lounge-menu-dropdown" class="profile-menu-dropdown hidden">
-                <a href="#" class="profile-menu-item" onclick="showLoungeMembers()">Show Members</a>
-                <a href="#" class="profile-menu-item" onclick="showLoungeDetails()">Show Details</a>
-            </div>
-            </div>
+            
         </header>
         
         <main class="messages-main"> <div class="lounge-container">
@@ -4703,21 +4737,55 @@
                 });
             }
 
-            // --- THIS IS THE FIX for the event listener error ---
+            // --- Direct Message Input ---
             const chatInput = document.getElementById('main-chat-input-field');
             if (chatInput) {
                 chatInput.addEventListener('keydown', (event) => {
                     if (event.key === 'Enter') {
-                        event.preventDefault(); // Prevents adding a new line in the input
-                        // Pass the input's current text to the sendMessage function
+                        event.preventDefault();
                         sendMessage({ text: chatInput.value });
                     }
                 });
-
-                chatInput.addEventListener('paste', handlePasteInChat);
+                // UPDATED: Use the new paste handler for DMs
+                chatInput.addEventListener('paste', (event) => handleImagePaste(event, 'dm'));
             }
 
-            // ... (the rest of the function remains the same) ...
+            // --- Lounge Chat Input ---
+            const loungeInput = document.getElementById('lounge-input-field');
+            if (loungeInput) {
+                loungeInput.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        sendLoungeMessage({text: loungeInput.value});
+                    }
+                });
+                // NEW: Use the new paste handler for Lounges
+                loungeInput.addEventListener('paste', (event) => handleImagePaste(event, 'lounge'));
+            }
+
+            // --- Search Input ---
+            const searchInput = document.getElementById('main-search-input');
+            if (searchInput) {
+                searchInput.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        handleSearch(searchInput.value);
+                    }
+                });
+            }
+            
+            // --- Terminal Input ---
+            const terminalInput = document.getElementById('terminal-input');
+            if (terminalInput) {
+                terminalInput.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        handleTerminalCommand();
+                    }
+                });
+            }
+
+            // --- Menu Closing Logic (unchanged) ---
             const menuButton = document.getElementById('profile-menu-button');
             const menuDropdown = document.getElementById('profile-menu-dropdown');
             if (menuButton && menuDropdown) {
@@ -4727,30 +4795,19 @@
                 });
             }
 
-            const searchInput = document.getElementById('main-search-input');
-                if (searchInput) {
-                    searchInput.addEventListener('keydown', (event) => {
-                        if (event.key === 'Enter') {
-                            event.preventDefault();
-                            handleSearch(searchInput.value);
-                        }
-                    });
-                }
-
             document.addEventListener('click', () => {
+                closeAllPopups();
                 if (menuDropdown && !menuDropdown.classList.contains('hidden')) {
                     menuDropdown.classList.add('hidden');
                 }
-
                 const chatMenu = document.getElementById('chat-menu-dropdown');
                 if (chatMenu && !chatMenu.classList.contains('hidden')) {
                     chatMenu.classList.add('hidden');
                 }
-                // Close the theme sidebar if it's open
                 closeThemeSidebar();
-
             });
 
+            // --- Post Modal Closing Logic (unchanged) ---
             const postModal = document.getElementById('post-modal');
             const closeModalBtn = document.getElementById('close-modal-btn');
 
@@ -4761,27 +4818,6 @@
                     closePostModal();
                 }
             });
-            const terminalInput = document.getElementById('terminal-input');
-            if (terminalInput) {
-                terminalInput.addEventListener('keydown', (event) => {
-                    if (event.key === 'Enter') {
-                        event.preventDefault();
-                        handleTerminalCommand();
-                    }
-                });
-            }
-            const loungeInput = document.getElementById('lounge-input-field');
-            if (loungeInput) {
-                loungeInput.addEventListener('keydown', (event) => {
-                    if (event.key === 'Enter') {
-                        event.preventDefault();
-                        // FIX: This now passes the input's value correctly
-                        sendLoungeMessage({text: loungeInput.value});
-                    }
-                });
-            }
-
-
         }
 
         const EMOJI_LIST = [
@@ -4858,11 +4894,25 @@
 
         function showReactionPicker(event, messageId) {
             event.stopPropagation();
-            const existingPicker = document.querySelector('.reaction-picker');
-            if (existingPicker) existingPicker.remove();
+            const pickerId = `picker-dm-${messageId}`;
+            const existingPicker = document.getElementById(pickerId);
 
+            // First, close all other pickers
+            document.querySelectorAll('.reaction-picker').forEach(p => {
+                if (p.id !== pickerId) p.remove();
+            });
+
+            // If the picker for this specific message already exists, remove it and stop.
+            if (existingPicker) {
+                existingPicker.remove();
+                return;
+            }
+
+            // Otherwise, create the new picker
             const picker = document.createElement('div');
             picker.className = 'reaction-picker';
+            picker.id = pickerId; // Give it a unique ID
+
             const commonReactions = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
             commonReactions.forEach(emoji => {
                 const span = document.createElement('span');
@@ -4873,32 +4923,18 @@
 
             document.body.appendChild(picker);
 
+            // Positioning logic (unchanged)
             const buttonRect = event.target.getBoundingClientRect();
             const pickerRect = picker.getBoundingClientRect();
-
-            // --- THIS IS THE PART TO FIDDLE WITH ---
-
-            // 1. Calculate the ideal centered position first.
-            let idealPickerLeft = buttonRect.left + window.scrollX + (buttonRect.width / 2) - (pickerRect.width / 2);
+            const screenEdgeMargin = 10;
             const pickerTop = buttonRect.top + window.scrollY - pickerRect.height - 10;
-
-            // 2. Define the margin you want from the edge of the screen.
-            const screenEdgeMargin = 10; // You can change this value (e.g., to 20)
-
-            // 3. Perform the boundary check.
-            // If the ideal position is too far left, lock it to the margin.
-            if (idealPickerLeft < screenEdgeMargin) {
-                idealPickerLeft = screenEdgeMargin;
-            }
-            // If the ideal position is too far right, lock it to the other edge.
+            let idealPickerLeft = buttonRect.left + window.scrollX + (buttonRect.width / 2) - (pickerRect.width / 2);
+            if (idealPickerLeft < screenEdgeMargin) idealPickerLeft = screenEdgeMargin;
             if (idealPickerLeft + pickerRect.width > window.innerWidth - screenEdgeMargin) {
                 idealPickerLeft = window.innerWidth - pickerRect.width - screenEdgeMargin;
             }
-
-            // --- END OF THE FIDDLE PART ---
-
             picker.style.top = `${pickerTop}px`;
-            picker.style.left = `${idealPickerLeft}px`; // Use the final, corrected position
+            picker.style.left = `${idealPickerLeft}px`;
         }
 
         /**
@@ -5252,22 +5288,31 @@
         }
 
         function showAllCircuitsPage() {
-            renderAllCircuitsGrid(); // Render the full grid
-            showPage('all-circuits-page'); // Show the new page
+            // --- THIS IS THE FIX: We now add the "New Circuit" button to this page's header ---
+            const headerRight = document.querySelector('#all-circuits-page .header-right');
+            headerRight.innerHTML = `
+                <button class="login-btn" onclick="showCreateCircuitPage()">New Circuit</button>
+            `;
+            // --- END OF FIX ---
+
+            renderAllCircuitsGrid(); // This function will now only render the grid of circuits
+            showPage('all-circuits-page');
         }
 
         function renderAllCircuitsGrid() {
             const grid = document.getElementById('all-circuits-grid');
             grid.innerHTML = '';
 
-            // "New Circuit" card first
+            // --- THIS IS THE FIX ---
+            // Create and add the "+ New Circuit" button first.
             const createCard = document.createElement('div');
             createCard.className = 'circuit-card create-circuit-card';
             createCard.onclick = () => showCreateCircuitPage();
             createCard.innerHTML = `<h4>+</h4><p>New Circuit</p>`;
             grid.appendChild(createCard);
+            // --- END OF FIX ---
 
-            // Then all the other circuits, without truncating text
+            // This function now renders the circuits from the server AFTER the button.
             allCircuitsData.forEach(circuit => {
                 const card = document.createElement('div');
                 card.className = 'circuit-card';
@@ -5395,6 +5440,49 @@
             });
         }
 
+        function fetchAndRenderMyLounges() {
+            const row = document.getElementById('explore-my-lounges-list');
+            row.innerHTML = '<p style="padding-left: 15px;">Loading your lounges...</p>';
+
+            // This uses the /api/me/lounges endpoint we created previously
+            fetch(`${API_BASE_URL}/api/me/lounges`, { headers: { 'Authorization': `Bearer ${apiToken}` } })
+            .then(response => response.json())
+            .then(lounges => {
+                row.innerHTML = ''; // Clear loading message
+
+                if (!lounges || lounges.length === 0) {
+                    row.innerHTML = '<p style="padding-left: 15px; color: #888;">You haven\'t joined any lounges yet.</p>';
+                    return;
+                }
+
+                // This rendering logic is identical to the home page for a consistent look
+                lounges.forEach(lounge => {
+                    const card = document.createElement('div');
+                    card.className = 'circuit-card';
+                    card.onclick = () => showLounge(lounge.id, lounge.name);
+                    
+                    if (lounge.cover_image) {
+                        card.style.backgroundImage = `url(${lounge.cover_image})`;
+                    } else {
+                        card.classList.add('no-image');
+                    }
+                    
+                    let privacyIcon = '';
+                    if (lounge.privacy === 'private') {
+                        privacyIcon = '<i class="fas fa-lock" style="position: absolute; top: 10px; right: 10px; color: white; text-shadow: 1px 1px 2px black; font-size: 0.8em;"></i>';
+                    } else if (lounge.privacy === 'unlisted') {
+                        privacyIcon = '<i class="fas fa-link" style="position: absolute; top: 10px; right: 10px; color: white; text-shadow: 1px 1px 2px black; font-size: 0.8em;"></i>';
+                    }
+                    
+                    card.innerHTML = `
+                        <h4>${truncate(lounge.name, 10)}</h4> 
+                        <p>${truncate(lounge.description, 15)}</p>
+                        ${privacyIcon}
+                    `;
+                    row.appendChild(card);
+                });
+            });
+        }
 
         function linkifyUsernames(text) {
             if (!text) return '';
@@ -5629,6 +5717,30 @@
             })
             .then(response => response.json())
             .then(data => {
+                const headerRight = document.querySelector('#lounge-page .header-right');
+                headerRight.innerHTML = ''; // Clear any old buttons
+
+                // Step 1: Add the new Invite button, but only for owners and moderators
+                if (data.user_role === 'owner' || data.user_role === 'moderator') {
+                    const inviteBtn = document.createElement('div');
+                    inviteBtn.className = 'profile-menu-button';
+                    inviteBtn.innerHTML = '<i class="fas fa-user-plus"></i>'; // Group icon
+                    inviteBtn.onclick = showInviteUserModal;
+                    headerRight.appendChild(inviteBtn);
+                }
+
+                // Step 2: Always add the three-dot menu button
+                const menuBtn = document.createElement('div');
+                menuBtn.className = 'profile-menu-button';
+                menuBtn.innerHTML = '<i class="fas fa-ellipsis-v"></i>';
+                menuBtn.onclick = toggleLoungeMenu; // This function already exists
+                headerRight.appendChild(menuBtn);
+
+                // Step 3: Always add the (initially hidden) dropdown menu itself
+                const menuDropdown = document.createElement('div');
+                menuDropdown.id = 'lounge-menu-dropdown';
+                menuDropdown.className = 'profile-menu-dropdown hidden';
+                headerRight.appendChild(menuDropdown);
                 if (data.is_member) {
                     chatBody.style.display = 'flex';
                     chatInput.style.display = 'flex';
@@ -5647,7 +5759,6 @@
                         chatBody.innerHTML = '<p style="text-align:center;color:#888;">No channels have been created yet.</p>';
                     }
                 } else {
-                    // ... (the rest of the function for non-members is correct and unchanged)
                     chatBody.style.display = 'none';
                     chatInput.style.display = 'none';
                     joinOverlay.classList.add('visible');
@@ -5655,15 +5766,29 @@
 
                     const loungeDetails = allLoungesData.find(l => l.id === loungeId);
                     if (loungeDetails) {
-                        document.getElementById('join-lounge-title').textContent = `You found the "${loungeDetails.name}" Lounge!`;
-                        document.getElementById('join-lounge-description').textContent = loungeDetails.description || 'Join this Lounge to view channels, see messages, and chat with other members.';
-                        
-                        const iconEl = document.getElementById('join-lounge-privacy-icon');
-                        if (loungeDetails.privacy === 'unlisted') {
-                            iconEl.className = 'fas fa-link privacy-icon';
+                        // --- THIS IS THE FIX ---
+                        const joinTitle = document.getElementById('join-lounge-title');
+                        const joinDesc = document.getElementById('join-lounge-description');
+                        const joinIcon = document.getElementById('join-lounge-privacy-icon');
+                        const joinBtn = document.getElementById('join-lounge-btn');
+
+                        if (loungeDetails.privacy === 'private') {
+                            // If the lounge is private, show a "Request Access" button.
+                            joinTitle.textContent = `"${loungeDetails.name}" is Private`;
+                            joinDesc.textContent = 'This lounge is private. You can request access from the owner.';
+                            joinIcon.className = 'fas fa-lock privacy-icon';
+                            joinBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Request Access'; // <-- THIS IS THE FIX
+                            joinBtn.onclick = handleRequestLoungeAccess;
+                            joinBtn.style.display = 'block';
+                            joinBtn.disabled = false;
                         } else {
-                            iconEl.className = 'fas fa-globe-americas privacy-icon';
+                            // Otherwise (public or unlisted), show the normal join screen.
+                            joinTitle.textContent = `You found the "${loungeDetails.name}" Lounge!`;
+                            joinDesc.textContent = loungeDetails.description || 'Join this Lounge to view channels, see messages, and chat with other members.';
+                            joinIcon.className = loungeDetails.privacy === 'unlisted' ? 'fas fa-link privacy-icon' : 'fas fa-globe-americas privacy-icon';
+                            joinBtn.style.display = 'block'; // Ensure the join button is visible
                         }
+                        // --- END OF FIX ---
                     }
                 }
             });
@@ -5745,11 +5870,11 @@
         }
 
         function showPage(pageId) {
+            closeAllPopups();
             // --- Page Switching ---
             document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
 
-            // Set the loggedIn state flag (this part is for logic, not layout)
             if (pageId === 'login-page') {
                 loggedIn = false;
             }
@@ -5759,36 +5884,25 @@
             const footer = document.querySelector('footer');
             const terminalBtn = document.getElementById('terminal-nav-btn');
             const mainHeader = document.getElementById('mainHeaderTitle');
-
-            // Define which pages are for authentication vs. the main app
             const isAuthPage = ['login-page', 'signup-page', 'account-type-selection-page', 'verify-page', 'tos-page'].includes(pageId);
 
             if (isAuthPage) {
-                // If it's a login/signup page, ALWAYS hide the sidebar, footer, and remove the margin.
                 sideNav.style.display = 'none';
                 footer.style.display = 'none';
                 document.body.classList.remove('with-sidebar');
                 if (mainHeader) mainHeader.textContent = 'Log in';
-
             } else {
-                // If it's any other page, it's part of the main app.
                 sideNav.style.display = 'flex';
                 document.body.classList.add('with-sidebar');
-
-                // Now, decide if the footer should be visible on this specific app page.
                 if (['messages-page', 'terminal-page', 'lounge-page'].includes(pageId)) {
                     footer.style.display = 'none';
                 } else {
                     footer.style.display = 'block';
                 }
-
-                // Show/hide terminal button based on rank
                 const userRank = profileData.me.rank;
                 if (terminalBtn) {
                     terminalBtn.style.display = (userRank === 'admin' || userRank === 'moderator') ? 'flex' : 'none';
                 }
-
-                // Update header with username
                 if (mainHeader) {
                     mainHeader.innerHTML = `${profileData.me.username || profileData.me.name} ${getRankIcon(profileData.me.rank)}`;
                 }
@@ -5811,6 +5925,9 @@
                     document.getElementById('chat-body').innerHTML = '<div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100%; color:#8e8e8e;"><i class="fas fa-paper-plane" style="font-size:4em; margin-bottom:15px;"></i><h3 style="margin:0; font-size:1.4em;">Your Messages</h3><p>Send a message to start a chat.</p></div>';
                 }
             } else if (pageId === 'explore-page') {
+                // --- ▼▼▼ THIS IS THE FIX ▼▼▼ ---
+                fetchAndRenderMyLounges(); // Add this line to load your lounges
+                // --- ▲▲▲ END OF FIX ▲▲▲ ---
                 renderArticles();
                 fetchAndRenderCircuits();
                 const createArticleBtn = document.getElementById('create-article-btn');
@@ -5828,12 +5945,12 @@
                     unreadNotificationCount = 0;
                     updateGeneralNotificationBadge();
                 });
-            } else if (pageId === 'all-lounges-page') { // <-- ADD THIS BLOCK
+            } else if (pageId === 'all-lounges-page') {
                 renderAllLoungesGrid();
-            } else if (pageId === 'all-trending-page') { // <-- AND THIS BLOCK
+            } else if (pageId === 'all-trending-page') {
                 renderAllTrending();
-            } else if (pageId === 'create-article-page') { // <--- THIS IS THE FIX
-                initializeQuillEditor();                  // This line was missing
+            } else if (pageId === 'create-article-page') {
+                initializeQuillEditor();
             }
         }
 
@@ -6279,45 +6396,56 @@
             });
         }
 
+        function openImageViewer(imageUrl) {
+            const modal = document.getElementById('image-viewer-modal');
+            const img = document.getElementById('image-viewer-content');
+            
+            img.src = imageUrl;
+            modal.classList.remove('hidden');
+
+            // Optional: Add Escape key functionality to close the modal
+            window.addEventListener('keydown', handleEscKey);
+        }
+
+        function closeImageViewer() {
+            const modal = document.getElementById('image-viewer-modal');
+            const img = document.getElementById('image-viewer-content');
+
+            modal.classList.add('hidden');
+            img.src = ''; // Clear the image source
+            window.removeEventListener('keydown', handleEscKey);
+        }
+
+        function handleEscKey(event) {
+            if (event.key === 'Escape') {
+                closeImageViewer();
+            }
+        }
+
         function showInviteUserModal() {
             const modal = document.getElementById('invite-lounge-member-modal');
             const userList = document.getElementById('invite-user-list');
             const searchInput = document.getElementById('invite-user-search');
             const sendBtn = document.getElementById('send-invite-btn');
 
-            // Reset the modal to its initial state
-            modal.classList.remove('hidden');
-            sendBtn.disabled = true;
-            searchInput.value = '';
-            userList.innerHTML = '<li>Loading users...</li>';
-
-            // Fetch both all users and the current lounge members at the same time
-            Promise.all([
-                fetch(`${API_BASE_URL}/api/users/for-chat`, { headers: { 'Authorization': `Bearer ${apiToken}` } }).then(res => res.json()),
-                fetch(`${API_BASE_URL}/api/lounge/${currentLoungeId}/members`, { headers: { 'Authorization': `Bearer ${apiToken}` } }).then(res => res.json())
-            ]).then(([allUsers, currentMembers]) => {
+            // This function will now fetch users from our new, specialized endpoint
+            const fetchAndRenderInvitees = (query = '') => {
+                userList.innerHTML = '<li>Searching...</li>';
                 
-                // Create a list of users who are NOT already in the lounge
-                const memberUsernames = new Set(currentMembers.map(m => m.username));
-                const potentialInvitees = allUsers.filter(u => !memberUsernames.has(u.username));
+                // The URL now includes the search query 'q'
+                const fetchUrl = `${API_BASE_URL}/api/lounge/${currentLoungeId}/potential-invitees?q=${encodeURIComponent(query)}`;
 
-                // This function will render the list based on the search filter
-                const renderUserList = (filter = '') => {
-                    userList.innerHTML = '';
-                    const lowercasedFilter = filter.toLowerCase();
-                    const filteredUsers = potentialInvitees.filter(u =>
-                        u.fullName.toLowerCase().includes(lowercasedFilter) || u.username.toLowerCase().includes(lowercasedFilter)
-                    );
-
-                    if (filteredUsers.length === 0) {
-                        userList.innerHTML = '<li>No users found.</li>';
+                fetch(fetchUrl, { headers: { 'Authorization': `Bearer ${apiToken}` } })
+                .then(response => response.json())
+                .then(users => {
+                    userList.innerHTML = ''; // Clear "Searching..." message
+                    if (users.length === 0) {
+                        userList.innerHTML = `<li>No users found matching "${query}".</li>`;
                         return;
                     }
 
-                    // Display the filtered list
-                    filteredUsers.slice(0, 50).forEach(user => { // Show up to 50 results
+                    users.forEach(user => {
                         const li = document.createElement('li');
-                        // We use the exact same HTML structure as the "New Chat" modal
                         li.innerHTML = `
                             <label class="new-chat-list-item">
                                 <input type="radio" name="invite-recipient" value="${user.username}">
@@ -6329,21 +6457,32 @@
                             </label>
                         `;
                         userList.appendChild(li);
+                        // We still need to populate profile data locally to render pictures correctly
+                        if (!profileData[user.username]) {
+                            profileData[user.username] = { name: user.fullName, ...user };
+                        }
                         updateProfilePictures(user.username);
                     });
-                };
+                })
+                .catch(error => {
+                    console.error("Failed to load potential invitees:", error);
+                    userList.innerHTML = '<li>Error loading users.</li>'; // This is the error you were seeing
+                });
+            };
 
-                // Attach event listeners for live search and button enabling
-                searchInput.onkeyup = () => renderUserList(searchInput.value);
-                userList.onchange = () => sendBtn.disabled = false;
-
-                // Perform the initial render of the user list
-                renderUserList();
-
-            }).catch(error => {
-                console.error("Failed to load data for invite modal:", error);
-                userList.innerHTML = '<li>Error loading users.</li>';
-            });
+            // --- Set up the modal ---
+            modal.classList.remove('hidden');
+            sendBtn.disabled = true;
+            searchInput.value = '';
+            
+            // The search input now triggers a new fetch every time you type
+            searchInput.onkeyup = () => fetchAndRenderInvitees(searchInput.value);
+            
+            // When a user is selected, enable the send button
+            userList.onchange = () => sendBtn.disabled = false;
+            
+            // Perform the initial fetch to populate the list
+            fetchAndRenderInvitees();
         }
 
         function showToast(message, type = 'success') {
@@ -6646,6 +6785,8 @@
             const header = document.getElementById('active-chat-header');
             const chatBody = document.getElementById('chat-body');
 
+            chatBody.addEventListener('scroll', closeAllPopups);
+
             header.innerHTML = `
                 <a href="#" class="active-chat-link" onclick="showProfile('${currentChatRecipient}')">
                     <div class="profile-pic" data-user-pic-id="${currentChatRecipient}"></div>
@@ -6744,21 +6885,22 @@
         /**
          * Handles when a user pastes content into the chat input.
          */
-        function handlePasteInChat(event) {
+        function handleImagePaste(event, contextType) {
             const items = event.clipboardData.items;
             for (let i = 0; i < items.length; i++) {
                 if (items[i].type.indexOf("image") !== -1) {
                     const file = items[i].getAsFile();
 
-                    // We found an image, process and send it
+                    // We found an image. Process it and show it in the preview area.
                     processImage(file)
                         .then(base64Image => {
-                            sendMessage({ image: base64Image });
+                            // This now uses your existing preview function for the correct context
+                            showImagePreview(base64Image, contextType);
                         })
                         .catch(err => console.error("Pasted image processing failed:", err));
 
-                    event.preventDefault(); // Stop the browser from pasting the image as a file object
-                    return;
+                    event.preventDefault(); // Stop the browser from pasting the raw file object
+                    return; // Exit after handling the image
                 }
             }
         }
@@ -7133,10 +7275,25 @@
 
         function showLoungeReactionPicker(event, messageId) {
             event.stopPropagation();
-            closeAllPopups(); // First, close any that are already open
+            const pickerId = `picker-lounge-${messageId}`;
+            const existingPicker = document.getElementById(pickerId);
 
+            // First, close all other pickers
+            document.querySelectorAll('.reaction-picker').forEach(p => {
+                if (p.id !== pickerId) p.remove();
+            });
+
+            // If the picker for this specific message already exists, remove it and stop.
+            if (existingPicker) {
+                existingPicker.remove();
+                return;
+            }
+
+            // Otherwise, create the new picker
             const picker = document.createElement('div');
             picker.className = 'reaction-picker';
+            picker.id = pickerId; // Give it a unique ID
+
             ['👍', '❤️', '😂', '😮', '😢', '🙏'].forEach(emoji => {
                 const span = document.createElement('span');
                 span.textContent = emoji;
@@ -7146,30 +7303,18 @@
 
             document.body.appendChild(picker);
 
-            // --- THIS IS THE NEW POSITIONING LOGIC ---
+            // Positioning logic (unchanged)
             const buttonRect = event.target.getBoundingClientRect();
             const pickerRect = picker.getBoundingClientRect();
-            const screenEdgeMargin = 10; // The space we want to keep from the edge of the screen
-
-            // Position it above the button vertically
+            const screenEdgeMargin = 10;
             const pickerTop = buttonRect.top + window.scrollY - pickerRect.height - 10;
-            
-            // Calculate the IDEAL centered position horizontally
             let idealPickerLeft = buttonRect.left + window.scrollX + (buttonRect.width / 2) - (pickerRect.width / 2);
-
-            // Fiddle with the position: check if it's going off-screen
-            if (idealPickerLeft < screenEdgeMargin) {
-                // It's too far left, so lock it to the left edge
-                idealPickerLeft = screenEdgeMargin;
-            } else if (idealPickerLeft + pickerRect.width > window.innerWidth - screenEdgeMargin) {
-                // It's too far right, so lock it to the right edge
+            if (idealPickerLeft < screenEdgeMargin) idealPickerLeft = screenEdgeMargin;
+            else if (idealPickerLeft + pickerRect.width > window.innerWidth - screenEdgeMargin) {
                 idealPickerLeft = window.innerWidth - pickerRect.width - screenEdgeMargin;
             }
-            
-            // Apply the final, corrected positions
             picker.style.top = `${pickerTop}px`;
             picker.style.left = `${idealPickerLeft}px`;
-            // --- END OF NEW LOGIC ---
         }
 
         function sendLoungeReaction(messageId, emoji) {
@@ -7393,6 +7538,8 @@
                         </div>`;
                 } else if (notif.event_type === 'lounge_invite' && notif.status !== 'pending') {
                     actionButtons = `<p style="font-style: italic; color: #555; margin-top: 10px;">Invitation ${notif.status}.</p>`;
+                }else if (notif.event_type === 'lounge_access_request' && notif.status !== 'pending') {
+                    actionButtons = `<p style="font-style: italic; color: #555; margin-top: 10px;">Request ${notif.status}.</p>`;
                 }
                 // --- END NEW ---
 
@@ -7773,7 +7920,7 @@
                 if (msg.is_deleted) {
                     bubbleContent = `<div id="message-content-${msg.id}" class="message-content deleted"><p>Message deleted by user</p></div>`;
                 } else if (msg.image) {
-                    bubbleContent = `<div id="message-content-${msg.id}" class="message-content"><img src="${msg.image}" alt="User image"></div>`;
+                    bubbleContent = `<div id="message-content-${msg.id}" class="message-content"><img src="${msg.image}" alt="User image" onclick="openImageViewer('${msg.image}')"></div>`;
                 } else if (msg.text) {
                     bubbleContent = `<div id="message-content-${msg.id}" class="message-content"><p id="message-text-${msg.id}">${linkifyUsernames(msg.text)}</p></div>`;
                 }
@@ -8203,19 +8350,18 @@
 
         function renderExploreCircuits(circuits) {
             const row = document.getElementById('explore-circuit-list');
-            row.innerHTML = '';
+            row.innerHTML = ''; // Clear previous content
 
-
-            // END OF THE PART TO CUT
-
-            // "New Circuit" card first
+            // --- THIS IS THE FIX ---
+            // Create and add the "+ New Circuit" button first.
             const createCard = document.createElement('div');
             createCard.className = 'circuit-card create-circuit-card';
-            createCard.onclick = () => showCreateCircuitPage();
+            createCard.onclick = () => showCreateCircuitPage(); // This correctly opens the create page
             createCard.innerHTML = `<h4>+</h4><p>New Circuit</p>`;
             row.appendChild(createCard);
+            // --- END OF FIX ---
 
-            // Then the other circuits with truncated text
+            // Now, render the actual circuits from the server after the button.
             circuits.slice(0, 7).forEach(circuit => {
                 const card = document.createElement('div');
                 card.className = 'circuit-card';
@@ -8368,6 +8514,31 @@
                     showLounge(currentLoungeId, document.getElementById('lounge-header-title').textContent);
                 } else {
                     alert('Error: ' + data.error);
+                }
+            });
+        }
+
+        function handleRequestLoungeAccess() {
+            const loungeId = currentLoungeId;
+            if (!loungeId) return;
+
+            const requestBtn = document.getElementById('join-lounge-btn');
+            requestBtn.disabled = true;
+            requestBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...'; // <-- IMPROVEMENT
+
+            fetch(`${API_BASE_URL}/api/lounge/${loungeId}/request-access`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${apiToken}` }
+            })
+            .then(response => response.json().then(data => ({ status: response.status, body: data })))
+            .then(({ status, body }) => {
+                if (status === 200) {
+                    showToast(body.message, 'success');
+                    requestBtn.innerHTML = '<i class="fas fa-check"></i> Request Sent'; // <-- IMPROVEMENT
+                } else {
+                    showToast(body.error || 'Could not send request.', 'error');
+                    requestBtn.disabled = false;
+                    requestBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Request Access'; // <-- IMPROVEMENT
                 }
             });
         }
@@ -8535,7 +8706,7 @@
                 bubbleContainer.className = 'bubble-container';
                 
                 let messageContent = '';
-                if (msg.image) messageContent += `<img src="${msg.image}" alt="Lounge image">`;
+                if (msg.image) messageContent += `<img src="${msg.image}" alt="Lounge image" onclick="openImageViewer('${msg.image}')">`;
                 if (msg.text) messageContent += `<p>${linkifyUsernames(msg.text)}</p>`;
                 
                 let authorHtml = '';
@@ -8925,11 +9096,10 @@
             const list = document.getElementById('lounge-members-list');
             const footer = document.getElementById('lounge-members-modal-footer');
 
-            // --- THIS IS THE CHANGE ---
-            // Always hide the footer that contains the invite button.
+            // --- THIS IS THE FIX: The invite button is now permanently removed from this modal's footer ---
             footer.innerHTML = '';
             footer.style.display = 'none';
-            // --- END OF CHANGE ---
+            // --- END OF FIX ---
 
             modal.classList.remove('hidden');
             list.innerHTML = '<li>Loading members...</li>';
@@ -9385,15 +9555,24 @@
         </header>
         <main>
 
+            
             <div class="content-section">
                 <h3>Circuits</h3>
                 <a href="#" class="more-link" onclick="showAllCircuitsPage()">More</a>
                 <div class="profile-row-scroller">
                     <div id="explore-circuit-list" class="profile-row">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="content-section">
+                <h3>My Lounges</h3>
+                <a href="#" class="more-link" onclick="showMyLoungesPage()">More</a>
+                <div class="profile-row-scroller">
+                    <div id="explore-my-lounges-list" class="profile-row">
                         </div>
                 </div>
             </div>
-
             <div class="content-section">
                 <div class="section-header">
                     <h3>Recommended Articles</h3>
@@ -9405,8 +9584,11 @@
                 <ul id="article-grid" class="article-grid">
                     </ul>
             </div>
+
         </main>
     </div>
+
+
 
     <div id="article-page" class="page">
         <header>
@@ -9725,15 +9907,20 @@
             </div>
         </div>
     </div>
-    <div id="invite-lounge-member-modal" class="following-modal hidden">
+    <div id="invite-lounge-member-modal" class="following-modal hidden" onclick="if (event.target === this) closeInviteUserModal();">
         <div class="following-modal-content">
             <div class="following-modal-header">
                 <span>Invite Member</span>
                 <span class="close-following-modal" onclick="closeInviteUserModal()">&times;</span>
             </div>
-            <div style="padding: 10px 15px; border-bottom: 1px solid #dbdbdb;">
-                <input type="text" id="invite-user-search" placeholder="Search for a user..." class="input" style="width: 95%;">
+
+            <div class="modal-search-bar-container">
+                <div class="group">
+                    <svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><g><path d="M21.53 20.47l-3.66-3.66C19.195 15.24 20 13.214 20 11c0-4.97-4.03-9-9-9s-9 4.03-9 9 4.03 9 9 9c2.215 0 4.24-.804 5.808-2.13l3.66 3.66c.147.146.34.22.53.22s.385-.073.53-.22c.295-.293.295-.767.002-1.06zM3.5 11c0-4.135 3.365-7.5 7.5-7.5s7.5 3.365 7.5 7.5-3.365 7.5-7.5 7.5-7.5-3.365-7.5-7.5z"></path></g></svg>
+                    <input placeholder="Search for a user..." type="search" class="input" id="invite-user-search">
+                </div>
             </div>
+
             <ul id="invite-user-list" class="following-list">
                 </ul>
             <div style="padding: 15px; border-top: 1px solid #dbdbdb; text-align: right;">
@@ -9742,6 +9929,9 @@
                 </button>
             </div>
         </div>
+    </div>
+    <div id="image-viewer-modal" class="following-modal hidden" onclick="closeImageViewer()">
+        <img id="image-viewer-content" src="" alt="Full-size image view" onclick="event.stopPropagation()">
     </div>
     </body>
 </html>
