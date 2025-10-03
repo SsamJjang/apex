@@ -4637,7 +4637,7 @@
     </div>
 
     <script>
-        const API_BASE_URL = '';
+        const API_BASE_URL = 'http://127.0.0.1:5000'
         let apiToken = null;
         let socket = null;
         let newLoungeCoverUrl = null;
@@ -5456,7 +5456,7 @@
                 }
 
                 // This rendering logic is identical to the home page for a consistent look
-                lounges.forEach(lounge => {
+                lounges.slice(0, 8).forEach(lounge => {
                     const card = document.createElement('div');
                     card.className = 'circuit-card';
                     card.onclick = () => showLounge(lounge.id, lounge.name);

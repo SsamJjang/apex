@@ -883,15 +883,12 @@ def create_lounge():
     cover_image_data_url = data.get("coverImage")
     processed_image_data = None
 
-    # --- NEW VALIDATION ---
     if not name:
         return jsonify({"error": "Lounge name is required"}), 400
     if len(name) > 20:
         return jsonify({"error": "Lounge name cannot exceed 20 characters"}), 400
     if len(description) > 600:
         return jsonify({"error": "Lounge description cannot exceed 600 characters"}), 400
-    # --- END VALIDATION ---
-
     if privacy not in ['public', 'private', 'unlisted']:
         return jsonify({"error": "Invalid privacy setting"}), 400
 
@@ -909,6 +906,8 @@ def create_lounge():
         except Exception as e:
             print(f"Could not process lounge cover image: {e}")
     
+    # --- THIS IS THE FIX ---
+    # 1. Create the main lounge object
     new_lounge = Lounge(
         name=name,
         description=description,
@@ -916,18 +915,17 @@ def create_lounge():
         privacy=privacy,
         cover_image=processed_image_data
     )
-    db.session.add(new_lounge)
-    db.session.flush()
 
-    owner_membership = LoungeMember(user_id=user.id, lounge_id=new_lounge.id, role='owner')
-    db.session.add(owner_membership)
-    
-    general_channel = LoungeChannel(name="general", lounge_id=new_lounge.id, is_main=True) # Set is_main to True
-    random_channel = LoungeChannel(name="random", lounge_id=new_lounge.id)
-    
-    db.session.add_all([general_channel, random_channel])
+    # 2. Create the related objects
+    owner_membership = LoungeMember(user=user, lounge=new_lounge, role='owner')
+    general_channel = LoungeChannel(name="general", lounge=new_lounge, is_main=True)
+    random_channel = LoungeChannel(name="random", lounge=new_lounge)
 
+    # 3. Add ALL objects to the session and commit ONCE.
+    # SQLAlchemy will handle the IDs and relationships correctly.
+    db.session.add_all([new_lounge, owner_membership, general_channel, random_channel])
     db.session.commit()
+    # --- END OF FIX ---
 
     return jsonify({
         "ok": True,
@@ -2845,4 +2843,4 @@ if __name__ == "__main__":
             db.session.commit()
 
     port = int(os.environ.get("PORT", 5000))
-    socketio.run(app, host="0.0.0.0", port=port, debug=False, allow_unsafe_werkzeug=True)
+    socketio.run(app, host="0.0.0.0", port=port, debug=True)
