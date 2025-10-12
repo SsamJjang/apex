@@ -2123,6 +2123,61 @@
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
+        footer {
+            background-color: #fff;
+            border-top: 1px solid #ddd;
+            padding: 20px 0; /* Increased vertical padding */
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .footer-content {
+            display: flex;
+            flex-direction: column; /* Stack version, links, copyright vertically */
+            align-items: center;
+            gap: 12px; /* Vertical gap between each element */
+        }
+
+        .footer-left {
+            order: -1; /* Keep version label at the top */
+        }
+
+        .version-label {
+            display: inline-block;
+            font-size: 0.85em;
+            background: var(--primary);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px; /* Small spacing below version */
+        }
+
+        .footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .footer-links a {
+            text-decoration: none;
+            color: #555;
+            font-size: 0.9em;
+            transition: color 0.2s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary-solid);
+        }
+
+        .footer-content p {
+            font-size: 0.8em;
+            color: #888;
+            margin-top: 10px;
+        }
+
         .theme-sidebar {
             position: absolute;
             right: 0;
@@ -9861,7 +9916,7 @@
     <footer>
         <div class="footer-content">
             <div class="footer-left">
-                <span class="version-label">i2.0.2</span>
+                <span class="version-label">Version i2.0.2</span>
             </div>
             <div class="footer-links">
                 <a href="#" onclick="showPage('index-page')">Home</a>
