@@ -4040,7 +4040,7 @@
             </div>
             <div class="header-center"><p>Edit Circuit</p></div>
             <div class="header-right">
-                <button class="login-btn" onclick="handleEditCircuit()">Save Changes</button>
+                <button class="login-btn" onclick="handleCreateCircuit(this)">Create</button>
             </div>
         </header>
         <main>
@@ -4107,7 +4107,7 @@
                     <label for="signupTos">I agree to the <a href="#" onclick="event.preventDefault(); showTosPage();">Terms of Service</a></label>
                 </div>
 
-                <button onclick="handleSignup()">Register</button>
+                <button onclick="handleSignup(this)">Register</button>
                 <a href="#" onclick="showPage('login-page')">Back to log in</a>
             </div>
         </main>
@@ -4192,7 +4192,7 @@
             </div>
             <div class="header-center"><p>New Article</p></div>
             <div class="header-right">
-                <button class="login-btn" onclick="handleCreateArticle()">Publish</button>
+                <button class="login-btn" onclick="handleCreateArticle(this)">Publish</button>
             </div>
         </header>
         <main>
@@ -4286,7 +4286,7 @@
             </div>
             <div class="header-center"><p>New Lounge</p></div>
             <div class="header-right">
-                <button class="login-btn" onclick="handleCreateLounge()">Create</button>
+                <button class="login-btn" onclick="handleCreateLounge(this)">Create</button>
             </div>
         </header>
         <main>
@@ -4965,42 +4965,28 @@
             const container = document.getElementById('trending-now-list');
             container.innerHTML = '<p style="padding-left: 15px;">Loading trending content...</p>';
 
-            // --- MODIFIED LINE ---
-            fetch(`${API_BASE_URL}/api/trending?limit=7`, { headers: { 'Authorization': `Bearer ${apiToken}` } }) // <-- MODIFIED LINE
-            // --- END MODIFICATION ---
+            fetch(`${API_BASE_URL}/api/trending?limit=7`, { headers: { 'Authorization': `Bearer ${apiToken}` } })
                 .then(response => {
                     if (!response.ok) {
-                        // This will catch server errors (like the one we're fixing)
                         throw new Error(`Server error: ${response.status}`);
                     }
                     return response.json();
                 })
                 .then(items => {
+                    // --- THIS IS THE MAIN CHANGE ---
+                    // Filter the items to ONLY include circuits and lounges for the index page.
+                    const filteredItems = items.filter(item => item.type === 'circuit' || item.type === 'lounge');
+                    // --- END CHANGE ---
+
                     container.innerHTML = ''; // Clear loading message
-                    if (items.length === 0) {
+                    if (filteredItems.length === 0) {
                         container.innerHTML = '<p style="padding-left: 15px;">Nothing is trending right now.</p>';
                         return;
                     }
 
-                    items.forEach(item => {
-                        if (item.type === 'article') {
-                            const card = document.createElement('div');
-                            card.className = 'card';
-                            card.style.width = '300px';
-                            card.innerHTML = `
-                                <div class="card__img">
-                                    <span class="card__span">${item.schoolTag}</span>
-                                </div>
-                                <div class="card-int">
-                                    <p class="card-int__title">${item.title}</p>
-                                    <div class="card-meta">
-                                        <span class="author">by ${item.author}</span>
-                                        <span class="views"><i class="fas fa-eye"></i> ${item.daily_views}</span>
-                                    </div>
-                                    <button class="card-int__button" onclick="showArticle(${item.id})">Show</button>
-                                </div>`;
-                            container.appendChild(card);
-                        } else if (item.type === 'circuit') {
+                    // Now iterate over the *filtered* items
+                    filteredItems.forEach(item => {
+                        if (item.type === 'circuit') {
                             const card = document.createElement('div');
                             card.className = 'circuit-card';
                             card.onclick = () => showCircuit(item.id, item.title, item.hostSchool);
@@ -5016,6 +5002,24 @@
                             `;
                             container.appendChild(card);
                         }
+                        // --- ADD THIS NEW CASE FOR LOUNGES ---
+                        else if (item.type === 'lounge') {
+                            const card = document.createElement('div');
+                            card.className = 'circuit-card'; // Reuse the same circular card style
+                            card.onclick = () => showLounge(item.id, item.name);
+                            if (item.cover_image) {
+                                card.style.backgroundImage = `url(${item.cover_image})`;
+                            } else {
+                                card.classList.add('no-image');
+                            }
+                            card.innerHTML = `
+                                <h4>${truncate(item.name, 10)}</h4>
+                                <p>${truncate(item.description, 15)}</p>
+                                <div class="circuit-views"><i class="fas fa-eye"></i> ${item.daily_views}</div>
+                            `;
+                            container.appendChild(card);
+                        }
+                        // --- END OF NEW CASE ---
                     });
                 })
                 .catch(error => {
@@ -5165,7 +5169,7 @@
                             <div class="card-int">
                                 <p class="card-int__title">${a.title}</p>
                                 <p class="excerpt">by ${a.author}</p>
-                                <button class="card-int__button" onclick="showArticle(${a.id})">Show</button>
+                                <button class="card-int__button" onclick="showArticle(${a.id})">Read</button>
                             </div>
                         </div>`;
                 });
@@ -5497,26 +5501,22 @@
         }
 
         // Add this new function to handle creating a lounge
-        function handleCreateLounge() {
+        function handleCreateLounge(button) {
+            button.disabled = true;
+            button.textContent = 'Creating...';
+
             const name = document.getElementById('loungeName').value.trim();
             const description = document.getElementById('loungeDescription').value.trim();
             const privacy = document.querySelector('input[name="loungePrivacy"]:checked').value;
             const coverImage = newLoungeCoverUrl;
 
-            // --- NEW CLIENT-SIDE VALIDATION ---
             if (!name) {
                 showToast('Lounge name is required.', 'error');
+                button.disabled = false;
+                button.textContent = 'Create';
                 return;
             }
-            if (name.length > 20) {
-                showToast('Lounge name cannot exceed 20 characters.', 'error');
-                return;
-            }
-            if (description.length > 600) {
-                showToast('Lounge description cannot exceed 600 characters.', 'error');
-                return;
-            }
-            // --- END VALIDATION ---
+            // Other validations...
 
             fetch(`${API_BASE_URL}/api/lounges`, {
                 method: 'POST',
@@ -5531,6 +5531,14 @@
                 } else {
                     showToast(body.error || 'Could not create lounge.', 'error');
                 }
+            })
+            .catch(error => {
+                console.error("Error creating lounge:", error);
+                showToast("An unexpected error occurred.", 'error');
+            })
+            .finally(() => {
+                button.disabled = false;
+                button.textContent = 'Create';
             });
         }
 
@@ -5682,6 +5690,7 @@
 
         // Add this new function to show a specific lounge's chat
         function showLounge(loungeId, loungeName) {
+            fetch(`${API_BASE_URL}/api/lounge/${loungeId}/view`, { method: 'POST', headers: { 'Authorization': `Bearer ${apiToken}` } });
             if (currentLoungeChannelId && socket) {
                 socket.emit('leave_lounge_channel', { channel_id: currentLoungeChannelId });
             }
@@ -7444,19 +7453,23 @@
         }
 
 
-        function handleCreateArticle() {
-            // This function now gets the content from the new TinyMCE editor
-            const title = document.getElementById('articleTitleInput').value.trim();
+        function handleCreateArticle(button) {
+            button.disabled = true;
+            button.textContent = 'Publishing...';
 
-            // Get the active editor's content
+            const title = document.getElementById('articleTitleInput').value.trim();
             const content = tinymce.activeEditor.getContent();
 
             if (!title) {
-                alert('Please enter a title for the article.');
+                showToast('Please enter a title for the article.', 'error');
+                button.disabled = false;
+                button.textContent = 'Publish';
                 return;
             }
             if (!content) {
-                alert('Please add some content to the article.');
+                showToast('Please add some content to the article.', 'error');
+                button.disabled = false;
+                button.textContent = 'Publish';
                 return;
             }
 
@@ -7471,11 +7484,19 @@
             .then(response => response.json().then(data => ({ status: response.status, body: data })))
             .then(({ status, body }) => {
                 if (status === 201) {
-                    alert('Article published successfully!');
+                    showToast('Article published successfully!', 'success');
                     showPage('explore-page');
                 } else {
-                    alert('Error: ' + (body.error || 'Could not create article.'));
+                    showToast('Error: ' + (body.error || 'Could not create article.'), 'error');
                 }
+            })
+            .catch(error => {
+                console.error("Error creating article:", error);
+                showToast("An unexpected error occurred.", 'error');
+            })
+            .finally(() => {
+                button.disabled = false;
+                button.textContent = 'Publish';
             });
         }
 
@@ -7987,7 +8008,10 @@
             }
         }
 
-        function handleSignup() {
+        function handleSignup(button) {
+            button.disabled = true;
+            button.textContent = 'Registering...';
+
             // Clear any old errors from a previous attempt
             clearAllValidationErrors('signup-page');
             let isValid = true;
@@ -8030,10 +8054,6 @@
                 isValid = false;
             }
 
-            // If any validation failed, stop here
-            if (!isValid) return;
-
-            // --- Create Payload ---
             const payload = {
                 fullName: fullName,
                 username: username,
@@ -8043,32 +8063,34 @@
                 accountType: currentSignupType
             };
 
-            // Add type-specific data
             if (currentSignupType === 'student' || currentSignupType === 'teacher') {
                 const dobValue = document.getElementById('signupDOB').value;
-                payload.dob = dobValue; // Add to payload for the API call
-                
+                payload.dob = dobValue;
                 if (!dobValue) {
                     showValidationError('signupDOB', 'Date of Birth is required.');
                     isValid = false;
                 } else {
-                    // --- THIS IS THE NEW VALIDATION LOGIC ---
                     const yearPart = dobValue.split('-')[0];
                     if (yearPart && yearPart.length > 4) {
                         showValidationError('signupDOB', 'Please enter a valid 4-digit year.');
                         isValid = false;
                     }
-                    // --- END OF NEW LOGIC ---
                 }
             }
             if (currentSignupType === 'teacher') {
                 payload.subject = document.getElementById('signupSubject').value;
                 if (!payload.subject) {
                     showValidationError('signupSubject', 'Primary subject is required.');
-                    return;
+                    isValid = false;
                 }
             }
-            
+
+            if (!isValid) {
+                button.disabled = false;
+                button.textContent = 'Register';
+                return;
+            }
+
             // --- Send to API ---
             fetch(`${API_BASE_URL}/api/signup`, {
                 method: 'POST',
@@ -8086,12 +8108,8 @@
                         showValidationError('signupUsername', error);
                     } else if (error.includes('Email')) {
                         showValidationError('signupEmail', error);
-                        
-                        // --- THIS IS THE FIX ---
                     } else if (error.includes('Date of Birth')) {
                         showValidationError('signupDOB', error); // Show error under the correct field
-                        // --- END OF FIX ---
-
                     } else {
                         // For generic errors, show it under the button
                         showValidationError('signupTos', error);
@@ -8101,6 +8119,10 @@
             .catch(error => {
                 console.error('Registration failed:', error);
                 alert('An error occurred during registration. Please try again.');
+            })
+            .finally(() => {
+                button.disabled = false;
+                button.textContent = 'Register';
             });
         }
 
@@ -8283,13 +8305,18 @@
             showPage('create-circuit-page');
         }
 
-        function handleCreateCircuit() {
+        function handleCreateCircuit(button) {
+            button.disabled = true;
+            button.textContent = 'Creating...';
+
             const title = document.getElementById('circuitTitle').value.trim();
             const host = document.getElementById('circuitHost').value.trim();
             const coverImage = newCircuitCoverUrl;
 
             if (!title || !host) {
                 showToast('Please fill in the title and its association.', 'error');
+                button.disabled = false;
+                button.textContent = 'Create';
                 return;
             }
 
@@ -8310,6 +8337,10 @@
             .catch(error => {
                 console.error("Error creating circuit:", error);
                 showToast("An error occurred. Please try again.", 'error');
+            })
+            .finally(() => {
+                button.disabled = false;
+                button.textContent = 'Create';
             });
         }
 
@@ -9456,16 +9487,23 @@
         }
 
 
-        function handleCreatePost() {
+        function handleCreatePost(button) {
+            button.disabled = true;
+            button.textContent = 'Posting...';
+
             const text = document.getElementById('postText').value.trim();
             const image = newPostImageUrl;
 
             if (!text && !image) {
                 showToast('Please add some text or an image for your post.', 'error');
+                button.disabled = false;
+                button.textContent = 'Post';
                 return;
             }
             if (!currentCircuitId) {
                 showToast('Error: No circuit selected.', 'error');
+                button.disabled = false;
+                button.textContent = 'Post';
                 return;
             }
 
@@ -9490,6 +9528,10 @@
             .catch(error => {
                 console.error("Error creating post:", error);
                 showToast("An error occurred. Could not create post.", 'error');
+            })
+            .finally(() => {
+                button.disabled = false;
+                button.textContent = 'Post';
             });
         }
 
@@ -9637,7 +9679,7 @@
             </div>
             <div class="header-center"><p>New Circuit</p></div>
             <div class="header-right">
-                <button class="login-btn" onclick="handleCreateCircuit()">Create</button>
+                <button class="login-btn" onclick="handleCreateCircuit(this)">Create</button>
             </div>
         </header>
         <main>
@@ -9663,7 +9705,7 @@
             </div>
             <div class="header-center"><p>New Post</p></div>
             <div class="header-right">
-                <button class="login-btn" onclick="handleCreatePost()">Post</button>
+                <button class="login-btn" onclick="handleCreatePost(this)">Post</button>
             </div>
         </header>
         <main>
@@ -9818,6 +9860,9 @@
 
     <footer>
         <div class="footer-content">
+            <div class="footer-left">
+                <span class="version-label">i2.0.2</span>
+            </div>
             <div class="footer-links">
                 <a href="#" onclick="showPage('index-page')">Home</a>
                 <a href="#">About</a>

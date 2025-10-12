@@ -2258,11 +2258,7 @@ def search():
 
 @app.get("/api/trending")
 def get_trending_items():
-    # --- THIS IS THE NEW PART ---
-    # Get a limit from the request args, defaulting to 5.
-    # We'll fetch more for the "All Trending" page.
-    limit = request.args.get('limit', 5, type=int)
-    # --- END NEW PART ---
+    limit = request.args.get('limit', 7, type=int)
 
     today_kst = datetime.now(KST).date()
     yesterday_kst = today_kst - timedelta(days=1)
@@ -2288,7 +2284,6 @@ def get_trending_items():
     trending.sort(key=lambda x: (x['growth'], x['views']), reverse=True)
 
     top_items = []
-    # --- THIS PART NOW USES THE NEW LIMIT ---
     for item_data in trending[:limit]:
         if item_data['type'] == 'article':
             item = Article.query.get(item_data['id'])
@@ -2304,6 +2299,19 @@ def get_trending_items():
                 top_items.append({
                     "type": "circuit", "id": item.id, "title": item.title,
                     "hostSchool": item.host_school, "coverImage": item.cover_image,
+                    "daily_views": item_data['views']
+                })
+        # This new part handles lounges
+        elif item_data['type'] == 'lounge':
+            item = Lounge.query.get(item_data['id'])
+            if item:
+                top_items.append({
+                    "type": "lounge",
+                    "id": item.id,
+                    "name": item.name,
+                    "description": item.description,
+                    "cover_image": item.cover_image,
+                    "privacy": item.privacy,
                     "daily_views": item_data['views']
                 })
 
@@ -2536,6 +2544,13 @@ def increment_circuit_view(circuit_id):
     views = _increment_view(circuit_id, 'circuit')
     return jsonify({"ok": True, "views": views})
 
+@app.post("/api/lounge/<int:lounge_id>/view")
+def increment_lounge_view(lounge_id):
+    if not Lounge.query.get(lounge_id):
+        return jsonify({"error": "Lounge not found"}), 404
+    # Re-use the existing helper function
+    views = _increment_view(lounge_id, 'lounge')
+    return jsonify({"ok": True, "views": views})
 
 @app.put("/api/profile")  # 👈 Note the new URL
 def set_profile():
