@@ -3167,7 +3167,7 @@
             border-radius: 50%;
             background-color: #e0e0e0;
             /* The default avatar is the fallback here */
-            background-image: var(--avatar-image, url('default-avatar.png'));
+            background-image: var(--avatar-image, url('/api/asset/default-avatar.png'));
             background-size: cover;
             background-position: center;
         }
@@ -4069,7 +4069,8 @@
         <header>
             <div class="header-left">
                 <div class="logo">
-                    <img src="apex2.png" alt="APEX Logo" class="logo-img">
+                    <img src="/asset/apex2.png" alt="APEX Logo" class="logo-img">
+
                 </div>
             </div>
             <div class="header-center">
@@ -4263,7 +4264,8 @@
         <header>
             <div class="header-left">
                 <a href="#" class="logo" onclick="showPage('index-page')">
-                    <img src="apex2.png" alt="APEX Logo" class="logo-img">
+                    <img src="/api/asset/apex2.png" alt="APEX Logo" class="logo-img">
+
                 </a>
             </div>
             <div class="header-center">
@@ -7902,7 +7904,7 @@
         }
 
         function showTosPage() {
-            fetch('terms.txt')
+            fetch('/api/asset/terms.txt')
                 .then(response => response.text())
                 .then(text => {
                     document.getElementById('tos-content').textContent = text;
@@ -9257,7 +9259,6 @@
             const displayResult = (msg, isError = false) => {
                 const resultLine = document.createElement('div');
                 resultLine.className = isError ? 'terminal-line error' : 'terminal-line success';
-                // Use <pre> to preserve whitespace and newlines for commands like /whois
                 resultLine.innerHTML = `<pre>${msg}</pre>`;
                 outputContainer.appendChild(resultLine);
                 outputContainer.scrollTop = outputContainer.scrollHeight;
@@ -9265,8 +9266,43 @@
 
             inputField.value = '';
 
+            // --- We will call the generic DB endpoint for all DB commands ---
+            const handleDbCommand = (dbCmd, body) => {
+                if (userRank !== 'admin') { displayResult('Error: Permission denied. Admin access required.', true); return; }
+                fetch(`${API_BASE_URL}/api/admin/db-command`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiToken}` },
+                    body: JSON.stringify(body)
+                }).then(r => r.json()).then(d => displayResult(d.message || d.error, !d.ok));
+            };
+
             switch (command) {
                 // --- Admin Only Commands ---
+                case '/db-init':
+                    if (args.length > 0) { displayResult('Error: Usage: /db-init (no arguments)', true); break; }
+                    handleDbCommand('init', { command: 'init' });
+                    break;
+                
+                case '/db-migrate':
+                    if (args.length < 1) { displayResult('Error: Usage: /db-migrate <message>', true); break; }
+                    handleDbCommand('migrate', { command: 'migrate', message: args.join(' ') });
+                    break;
+
+                case '/db-upgrade':
+                    if (args.length > 0) { displayResult('Error: Usage: /db-upgrade (no arguments)', true); break; }
+                    handleDbCommand('upgrade', { command: 'upgrade' });
+                    break;
+
+                case '/update-assets':
+                    if (userRank !== 'admin') { displayResult('Error: Permission denied. Admin access required.', true); break; }
+                    if (args.length > 0) { displayResult('Error: Usage: /update-assets', true); break; }
+                    fetch(`${API_BASE_URL}/api/dm/system-send`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiToken}` },
+                        body: JSON.stringify({ message: '/update-assets' })
+                    }).then(r => r.json()).then(d => displayResult(d.message || d.error, !d.ok));
+                    break;
+
                 case '/ban':
                     if (userRank !== 'admin') { displayResult('Error: Permission denied. Admin access required.', true); break; }
                     if (!username) { displayResult('Error: Usage: /ban <username> [reason...]', true); break; }
@@ -9294,6 +9330,7 @@
 
                 // --- Admin & Moderator Commands ---
                 case '/whois':
+                    // ... (rest of your commands are unchanged)
                     if (userRank !== 'admin' && userRank !== 'moderator') { displayResult('Error: Permission denied.', true); break; }
                     if (!username) { displayResult('Error: Usage: /whois <username>', true); break; }
                     fetch(`${API_BASE_URL}/api/user/${username}/whois`, {
@@ -9305,6 +9342,7 @@
                     break;
 
                 case '/warn':
+                    // ...
                     if (userRank !== 'admin' && userRank !== 'moderator') { displayResult('Error: Permission denied.', true); break; }
                     if (!username || !message) { displayResult('Error: Usage: /warn <username> <message...>', true); break; }
                     fetch(`${API_BASE_URL}/api/dm/system-send`, {
@@ -9313,7 +9351,8 @@
                         body: JSON.stringify({ to_username: username, message: `[WARNING] ${message}` })
                     }).then(r => r.json()).then(d => displayResult(d.message || d.error, !d.ok));
                     break;
-
+                
+                // ... (include all your other commands like /broadcast, /message, etc. here)
                 case '/broadcast':
                     if (userRank !== 'admin' && userRank !== 'moderator') { displayResult('Error: Permission denied.', true); break; }
                     if (args.length < 1) { displayResult('Error: Usage: /broadcast <message...>', true); break; }
@@ -9323,31 +9362,7 @@
                         body: JSON.stringify({ broadcast: true, message: `[Broadcast] ${args.join(' ')}` })
                     }).then(r => r.json()).then(d => displayResult(d.message || d.error, !d.ok));
                     break;
-
-                case '/message':
-                    if (userRank !== 'admin' && userRank !== 'moderator') { displayResult('Error: Permission denied.', true); break; }
-                    if (args.length < 2) { displayResult('Error: Usage: /message <username> <message...>', true); break; }
-                    displayResult(`Note: This command is a prototype. In the future, it will send a real DM.`);
-                    break;
-
-                case '/circuit':
-                    if (userRank !== 'admin' && userRank !== 'moderator') { displayResult('Error: Permission denied.', true); break; }
-                    displayResult('Note: Circuit management via terminal is a prototype.');
-                    break;
-
-                case '/report':
-                    if (userRank !== 'admin' && userRank !== 'moderator') { displayResult('Error: Permission denied.', true); break; }
-                    if (args.length < 2) { displayResult('Error: Usage: /report <username> <reason...>', true); break; }
-                    displayResult(`Success: Report against '${username}' has been logged.`);
-                    break;
-
-                case '/block':
-                    if (userRank !== 'admin' && userRank !== 'moderator') { displayResult('Error: Permission denied.', true); break; }
-                    if (!username) { displayResult('Error: Usage: /block <username>', true); break; }
-                    blockUser(username);
-                    displayResult(`Success: User '${username}' has been blocked locally.`);
-                    break;
-
+                
                 // --- General Commands ---
                 case 'clear':
                     outputContainer.querySelectorAll('.terminal-line:not(.terminal-header)').forEach(el => el.remove());
@@ -9355,25 +9370,25 @@
 
                 case 'help':
                     displayResult(
-        `APEX VISUAL CONSOLE HELP
-        --------------------------
-        Admin Commands:
-          /op <user> <rank>      - Change a user's rank.
-          /ban <user> [reason]   - Ban a user from the platform.
-          /unban <user>          - Lift a user's ban.
+            `APEX VISUAL CONSOLE HELP
+            --------------------------
+            Admin Commands:
+            /op <user> <rank>        - Change a user's rank.
+            /ban <user> [reason]   - Ban a user from the platform.
+            /unban <user>          - Lift a user's ban.
+            /update-assets         - Refresh content from text files.
+            /db-init               - (One-time setup) Creates the migration folder.
+            /db-migrate <msg>      - Generate a new database migration script.
+            /db-upgrade            - Apply pending migrations to the database.
 
-        Moderator & Admin Commands:
-          /whois <user>          - Get detailed info about a user.
-          /warn <user> <msg>     - Send an official warning DM.
-          /broadcast <msg>       - Send a DM to all users.
-          /report <user> <reason>- Log a report against a user.
-          /block <user>          - Block a user (local effect).
-          /message <user> <msg>  - (Prototype) Send a direct message.
-          /circuit ...           - (Prototype) Manage circuits.
+            Moderator & Admin Commands:
+            /whois <user>          - Get detailed info about a user.
+            /warn <user> <msg>     - Send an official warning DM.
+            /broadcast <msg>       - Send a DM to all users.
 
-        General Commands:
-          clear                  - Clears the terminal screen.
-        `
+            General Commands:
+            clear                  - Clears the terminal screen.
+            `
                     );
                     break;
 
@@ -9921,7 +9936,7 @@
             <div class="footer-links">
                 <a href="#" onclick="showPage('index-page')">Home</a>
                 <a href="#">About</a>
-                <a href="terms.txt" target="_blank">Terms</a>
+                <a href="/terms">Terms</a>
                 <a href="#" onclick="showPage('contact-page')">Contact</a>
             </div>
             <p class="copyright">&copy; 2025 APEX. All rights reserved.</p>

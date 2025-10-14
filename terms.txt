@@ -1,23 +1,43 @@
-﻿TERMS AND SERVICE
-Apex is a social network made for students and teachers who associate with international schools in Korea. It operates through a custom-made server and an HTML / PHP code base. Apex aims to create a safe and inclusive environment for anyone who signs up. Your privacy and personal information will be protected at all costs. Apex does not use your information for their own benefit.
+﻿Last Updated: *Oct 14th, 2025*
+Welcome to APEX, a social networking platform developed by Prototype Neo Industries. By creating an account and using APEX, you agree to comply with and be bound by the following Terms of Service and Privacy Policy. Please read them carefully before using the platform.
 
+##**1. About APEX**
+APEX is a social networking website designed to provide a safe and engaging environment for students and approved organizations. To maintain this safe space, only certain verified school accounts are accepted for registration.
+Users can:
 
-Apex claims the application’s entirety and its associated creators are not responsible for any circumstances that may happen to anyone who signs up or enters the site. 
+    1. Create their own personal or organizational accounts,
 
+    2. Publicly share posts, and
 
+    3. Send private messages to other users.
 
+##**2. Privacy Policy**
+APEX requires users to provide limited personal information — specifically, name, birthday, school, and age — during registration.
+We do not collect any personal information beyond what is listed on the website.
+This information is used only to provide the most suitable and secure environment for our users, such as verifying school accounts and customizing the platform experience. We do not sell, share, or distribute personal data to third parties.
 
-RULES
-* Any user who breaks any of the following rules may receive consequences from warnings to being banned.
-* Apex is a site created in order to create a sense of community among students. Bullying of any form, harassment, and exclusion in any form is strictly forbidden.
-* Any aggressive way of representing hate speech, racism, sexism, homophobia, or personal attacks are forbidden.
-* Spreading or leaking other’s privacy information is forbidden.
-* Any form of monetization through Apex is forbidden.
-* Mockery, imitation of others, and other disrespectful behavior are forbidden.
-* Swearing, cursing, and disrespectful language should be used thoughtfully.
-* Exploits / hacks of any form are strictly banned.
-* Any ways of imitating others when registering is forbidden.
-* Any form of NSFW and inappropriate content is forbidden.
-* Other users have their rights to own their content. Unless given permission plagiarism is forbidden.
-* Extreme cases of spamming under other’s content / chat is forbidden.
-* Usernames should be kept moderately and words of disrespect and exclusion are forbidden.
+##**3. Content Monitoring & Moderator Rights**
+To maintain a safe and respectful community, APEX moderators and administrators reserve the right to review posts or private messages if they are:
+Reported by users, or
+Flagged as potentially harmful, illegal, or likely to start community issues.
+This is done solely to protect the community, not for surveillance.
+
+##**4. Content Removal and Account Actions**
+APEX reserves the right to:
+Remove any content that violates these Terms, community guidelines, or applicable laws;
+Suspend or permanently ban accounts that repeatedly violate policies, engage in harmful behavior, or threaten the safety of others.
+Decisions made by moderators and admins are final.
+
+##**5. User Safety & Responsibility**
+While APEX takes steps to create a secure platform, your personal safety online ultimately depends on your actions.
+Never share your password or sensitive information, even with people you think you know.
+Exercise caution when interacting with others.
+APEX is not responsible for any negative consequences that result from users trusting others or sharing information irresponsibly.
+If you encounter suspicious activity, report it immediately through the platform’s reporting tools.
+
+##**6. Updates to These Terms**
+We may revise these Terms of Service periodically. Changes will be communicated through the platform, and continued use of APEX after updates constitutes acceptance of the new Terms.
+
+##**7. Contact**
+For any questions, concerns, or reports, please contact us at:
+ 📧 support@prototype-neo.com

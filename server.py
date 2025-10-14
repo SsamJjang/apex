@@ -1,5 +1,5 @@
-import os, secrets
-from flask import Flask, request, jsonify, redirect, url_for, make_response
+import os, secrets, markdown
+from flask import Flask, request, jsonify, redirect, url_for, make_response, send_file, render_template
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import or_
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -13,11 +13,14 @@ import io
 from PIL import Image
 from datetime import datetime, date, timedelta
 import pytz
+from flask_migrate import Migrate
+import subprocess
 
 # -------------------------------------------------
 # App / Config
 # -------------------------------------------------
-app = Flask(__name__)
+app = Flask(__name__, template_folder='.')
+
 CORS(app)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", secrets.token_hex(16))
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///app.db?timeout=15")
@@ -28,6 +31,7 @@ app.config["GOOGLE_CLIENT_ID"] = os.environ.get("GOOGLE_CLIENT_ID", "")
 app.config["GOOGLE_CLIENT_SECRET"] = os.environ.get("GOOGLE_CLIENT_SECRET", "")
 KST = pytz.timezone('Asia/Seoul')
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 socketio = SocketIO(app, cors_allowed_origins="*")
 oauth = OAuth(app)
 
@@ -49,6 +53,13 @@ followers = db.Table('followers',
 # -------------------------------------------------
 # Models
 # -------------------------------------------------
+
+class StoredAsset(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)  # e.g., 'logo.png'
+    mimetype = db.Column(db.String(100), nullable=False)          # e.g., 'image/webp'
+    data = db.Column(db.Text, nullable=False) 
+
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
@@ -337,6 +348,77 @@ def _post_lounge_join_message(user_id, lounge_id):
     }
     socketio.emit('new_lounge_message', message_payload, room=f"channel_{main_channel.id}")
 
+def seed_initial_assets():
+    assets_to_seed = [
+        {'name': 'default-avatar.png', 'path': 'default-avatar.png', 'mimetype': 'image/png'},
+        {'name': 'apex.png', 'path': 'apex.png', 'mimetype': 'image/png'},
+        {'name': 'apex2.png', 'path': 'apex2.png', 'mimetype': 'image/png'},
+        {'name': 'terms.txt', 'path': 'terms.txt', 'mimetype': 'text/plain'},
+        {'name': 'about.txt', 'path': 'about.txt', 'mimetype': 'text/plain'},
+        {'name': 'contact.txt', 'path': 'contact.txt', 'mimetype': 'text/plain'},
+    ]
+
+    for asset_info in assets_to_seed:
+        if not StoredAsset.query.filter_by(name=asset_info['name']).first():
+            try:
+                with open(asset_info['path'], 'rb') as f:
+                    file_bytes = f.read()
+                
+                # --- Process file into a Data URL ---
+                processed_data = None
+                asset_mimetype = asset_info['mimetype']
+
+                if asset_mimetype.startswith('image/'):
+                    with Image.open(io.BytesIO(file_bytes)) as img:
+                        img.thumbnail((512, 512))
+                        output_buffer = io.BytesIO()
+                        img.save(output_buffer, format='WEBP', quality=85)
+                        webp_image_bytes = output_buffer.getvalue()
+                    
+                    base64_webp = base64.b64encode(webp_image_bytes).decode('utf-8')
+                    processed_data = f"data:image/webp;base64,{base64_webp}"
+                    asset_mimetype = 'image/webp' # Update mimetype for storage
+                else:
+                    # For non-image files, create a standard data URL
+                    base64_data = base64.b64encode(file_bytes).decode('utf-8')
+                    processed_data = f"data:{asset_mimetype};base64,{base64_data}"
+
+                new_asset = StoredAsset(
+                    name=asset_info['name'],
+                    mimetype=asset_mimetype,
+                    data=processed_data
+                )
+                db.session.add(new_asset)
+                print(f"Seeded and processed asset: {asset_info['name']}")
+
+            except FileNotFoundError:
+                print(f"WARNING: Could not find {asset_info['path']}")
+            except Exception as e:
+                print(f"WARNING: Failed to process {asset_info['name']}: {e}")
+
+    db.session.commit()
+
+@app.get("/api/asset/<string:asset_name>")
+def get_asset(asset_name):
+    asset = StoredAsset.query.filter_by(name=asset_name).first()
+    if not asset:
+        return jsonify({"error": "Asset not found"}), 404
+
+    # --- Parse the Data URL from the database ---
+    try:
+        # asset.data is now a string like "data:image/webp;base64,..."
+        header, encoded_data = asset.data.split(",", 1)
+        decoded_bytes = base64.b64decode(encoded_data)
+
+        return send_file(
+            io.BytesIO(decoded_bytes),
+            mimetype=asset.mimetype,
+            as_attachment=False
+        )
+    except (ValueError, IndexError) as e:
+        print(f"Error parsing data URL for asset {asset_name}: {e}")
+        return "Internal server error: Invalid asset format", 500
+
 def get_lounge_role(user_id, lounge_id):
     membership = LoungeMember.query.filter_by(user_id=user_id, lounge_id=lounge_id).first()
     return membership.role if membership else None
@@ -454,6 +536,31 @@ def create_article():
     db.session.commit()
 
     return jsonify({"ok": True, "message": "Article created successfully!", "article_id": new_article.id}), 201
+
+@app.route('/asset/<path:asset_name>')
+def serve_asset(asset_name):
+    """
+    Serves a stored asset (like an image) from the database.
+    """
+    try:
+        asset = StoredAsset.query.filter_by(name=asset_name).first()
+
+        if asset:
+            # --- Parse the Data URL from the database ---
+            header, encoded_data = asset.data.split(",", 1)
+            decoded_bytes = base64.b64decode(encoded_data)
+            return send_file(
+                io.BytesIO(decoded_bytes),
+                mimetype=asset.mimetype,
+                as_attachment=False,
+                download_name=asset.name
+            )
+        else:
+            return "Asset not found", 404
+            
+    except Exception as e:
+        print(f"Error serving asset {asset_name}: {e}")
+        return "Internal server error", 500
 
 
 @app.get("/api/articles")
@@ -1195,7 +1302,41 @@ def get_lounge_channels(lounge_id):
     })
 
 
+@app.post("/api/admin/db-command")
+def handle_db_command():
+    user = auth_user()
+    if not user or user.rank != 'admin':
+        return jsonify({"error": "Forbidden: Admin access required"}), 403
 
+    data = request.get_json(force=True)
+    command = data.get("command")
+    message = data.get("message")
+    
+    cmd_parts = ["flask", "db"]
+
+    if command == "init":
+        cmd_parts.append("init")
+    elif command == "migrate":
+        if not message:
+            return jsonify({"error": "A message is required for the migrate command."}), 400
+        cmd_parts.extend(["migrate", "-m", message])
+    elif command == "upgrade":
+        cmd_parts.append("upgrade")
+    else:
+        return jsonify({"error": "Invalid database command."}), 400
+
+    try:
+        # Execute the command and capture the output
+        result = subprocess.run(cmd_parts, capture_output=True, text=True, check=True)
+        output = result.stdout or "Command executed successfully with no output."
+        return jsonify({"ok": True, "message": output})
+    except subprocess.CalledProcessError as e:
+        # This catches errors from the flask command itself
+        error_output = e.stderr or e.stdout or "An unknown error occurred during command execution."
+        return jsonify({"ok": False, "error": error_output}), 500
+    except FileNotFoundError:
+        # This catches the error if 'flask' isn't in the system's PATH
+        return jsonify({"ok": False, "error": "Error: 'flask' command not found. The server environment may not be configured to run shell commands."}), 500
 
 # Modify the message fetching endpoint to get messages from a CHANNEL
 @app.get("/api/lounge/channel/<int:channel_id>/messages")
@@ -1454,6 +1595,35 @@ def get_circuits():
     ]
     return jsonify(circuit_list)
 
+def serve_simple_page(template_file, asset_name, page_title):
+    asset = StoredAsset.query.filter_by(name=asset_name).first()
+
+    if not asset:
+        return f"{page_title} page content not found.", 404
+
+    try:
+        header, encoded_data = asset.data.split(",", 1)
+        decoded_text = base64.b64decode(encoded_data).decode('utf-8')
+        
+        # --- THIS IS THE NEW LINE ---
+        # Convert the Markdown text to HTML
+        html_content = markdown.markdown(decoded_text)
+
+    except Exception as e:
+        print(f"Error decoding or converting {asset_name}: {e}")
+        return f"Could not load {page_title} page.", 500
+
+    # Pass the converted HTML to the template
+    return render_template(template_file, page_title=page_title, page_content=html_content)
+
+# --- Routes for the new pages ---
+@app.route('/about')
+def about_page():
+    return serve_simple_page('page_template.html', 'about.txt', 'About Us')
+
+@app.route('/contact')
+def contact_page():
+    return serve_simple_page('page_template.html', 'contact.txt', 'Contact Us')
 
 @app.get("/health")
 def health():
@@ -1692,12 +1862,31 @@ def system_send_dm():
         return jsonify({"error": "System user not found. Critical error."}), 500
 
     data = request.get_json(force=True)
-    message = data.get("message", "")
-    to_username = data.get("to_username")  # For /warn
-    broadcast = data.get("broadcast", False)  # For /broadcast
+    message = data.get("message", "").strip()
+    to_username = data.get("to_username")
+    broadcast = data.get("broadcast", False)
+
+    # --- NEW: Handle special, non-messaging admin commands first ---
+    if message == "/update-assets":
+        if mod_user.rank != 'admin':
+            return jsonify({"error": "Forbidden: This command requires admin privileges."}), 403
+        
+        result = _reseed_assets_from_disk()
+        
+        # Send a confirmation DM back to the admin who ran the command
+        dm = DM(sender_id=system_user.id, receiver_id=mod_user.id, message=result["message"])
+        db.session.add(dm)
+        db.session.commit()
+        # Notify the admin's client in real-time
+        socketio.emit("dm_received", {
+            "from": system_user.username, "message": dm.message, "created_at": dm.created_at.isoformat() + "Z"
+        }, room=f"user_{mod_user.id}")
+        
+        return jsonify({"ok": True, "message": result["message"]})
+    # --- END OF NEW LOGIC ---
 
     if not message:
-        return jsonify({"error": "Message is required"}), 400
+        return jsonify({"error": "Message is required for sending DMs"}), 400
 
     if broadcast:
         all_users = User.query.filter(User.username != "System").all()
@@ -1717,7 +1906,7 @@ def system_send_dm():
         return jsonify({"ok": True, "message": f"Warning sent to {to_username}."})
 
     else:
-        return jsonify({"error": "Recipient or broadcast flag required."}), 400
+        return jsonify({"error": "Recipient or broadcast flag required for messaging commands."}), 400
 
 
 @app.put("/api/circuit/<int:circuit_id>")
@@ -1905,6 +2094,45 @@ def get_lounge_reaction_users(message_id, emoji):
     usernames = [u.username for u in users]
     return jsonify(usernames)
 
+@app.route('/terms')
+def terms_page():
+    return serve_simple_page('page_template.html', 'terms.txt', 'Terms of Service')
+
+def _reseed_assets_from_disk():
+    """Reads all asset files from disk and updates them in the database."""
+    assets_to_seed = [
+        {'name': 'default-avatar.png', 'path': 'default-avatar.png', 'mimetype': 'image/png'},
+        {'name': 'apex.png', 'path': 'apex.png', 'mimetype': 'image/png'},
+        {'name': 'apex2.png', 'path': 'apex2.png', 'mimetype': 'image/png'},
+        {'name': 'terms.txt', 'path': 'terms.txt', 'mimetype': 'text/plain'},
+        {'name': 'about.txt', 'path': 'about.txt', 'mimetype': 'text/plain'},
+        {'name': 'contact.txt', 'path': 'contact.txt', 'mimetype': 'text/plain'},
+    ]
+    updated_count = 0
+    created_count = 0
+
+    for asset_info in assets_to_seed:
+        try:
+            with open(asset_info['path'], 'rb') as f:
+                file_bytes = f.read()
+            # This part is simplified for brevity but assumes your image processing logic is here
+            asset_mimetype = asset_info['mimetype']
+            base64_data = base64.b64encode(file_bytes).decode('utf-8')
+            processed_data = f"data:{asset_mimetype};base64,{base64_data}"
+            
+            existing_asset = StoredAsset.query.filter_by(name=asset_info['name']).first()
+            if existing_asset:
+                existing_asset.data = processed_data
+                updated_count += 1
+            else:
+                new_asset = StoredAsset(name=asset_info['name'], mimetype=asset_mimetype, data=processed_data)
+                db.session.add(new_asset)
+                created_count += 1
+        except Exception as e:
+            print(f"WARNING: During reseed, failed to process {asset_info['name']}: {e}")
+
+    db.session.commit()
+    return {"message": f"Content refresh complete. Updated: {updated_count}, Created: {created_count}."}
 
 @socketio.on('react_to_lounge_message')
 def handle_lounge_reaction(data):
@@ -2827,6 +3055,10 @@ def sent():
          "created_at": dm.created_at.isoformat()} for dm in dms
     ])
 
+@app.route('/')
+def index():
+    return render_template('index.html')
+
 
 # -------------------------------------------------
 # Socket.IO (실시간 DM)
@@ -2839,10 +3071,12 @@ if __name__ == "__main__":
         db.create_all()
 
         # --- THIS IS THE FIX ---
-        # Create APEX user if it doesn't exist
+        # Seed initial assets like logos and default images
+        seed_initial_assets()
+
+        # Create ANNOUNCEMENTS user if it doesn't exist
         if not User.query.filter_by(username="ANNOUNCEMENTS").first():
-            print("Creating APEX user...")
-            # The username is now 'APEX' and the email is 'apex@internal'
+            print("Creating ANNOUNCEMENTS user...")
             system_user = User(username="ANNOUNCEMENTS", full_name="ANNOUNCEMENTS", email="apex@announcements",
                                rank="admin")
             db.session.add(system_user)
@@ -2852,9 +3086,6 @@ if __name__ == "__main__":
         # Seeding logic for circuits
         if not Circuit.query.first():
             print("Seeding database with initial circuits...")
-            # c1 = Circuit(title='KAIAC Soccer Finals 2025', host_school='YISS', code='100001')
-            # c2 = Circuit(title='SFS Fall Festival', host_school='SFS', code='100002')
-            # db.session.add_all([c1, c2])
             db.session.commit()
 
     port = int(os.environ.get("PORT", 5000))
