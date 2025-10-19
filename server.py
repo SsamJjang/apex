@@ -1,5 +1,5 @@
 import os, secrets, markdown
-from flask import Flask, request, jsonify, redirect, url_for, make_response, send_file, render_template
+from flask import Flask, request, jsonify, redirect, url_for, make_response, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import or_
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -13,14 +13,11 @@ import io
 from PIL import Image
 from datetime import datetime, date, timedelta
 import pytz
-from flask_migrate import Migrate
-import subprocess
 
 # -------------------------------------------------
 # App / Config
 # -------------------------------------------------
-app = Flask(__name__, template_folder='.')
-
+app = Flask(__name__)
 CORS(app)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", secrets.token_hex(16))
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///app.db?timeout=15")
@@ -31,7 +28,6 @@ app.config["GOOGLE_CLIENT_ID"] = os.environ.get("GOOGLE_CLIENT_ID", "")
 app.config["GOOGLE_CLIENT_SECRET"] = os.environ.get("GOOGLE_CLIENT_SECRET", "")
 KST = pytz.timezone('Asia/Seoul')
 db = SQLAlchemy(app)
-migrate = Migrate(app, db)
 socketio = SocketIO(app, cors_allowed_origins="*")
 oauth = OAuth(app)
 
@@ -53,16 +49,9 @@ followers = db.Table('followers',
 # -------------------------------------------------
 # Models
 # -------------------------------------------------
-
-class StoredAsset(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), unique=True, nullable=False)  # e.g., 'logo.png'
-    mimetype = db.Column(db.String(100), nullable=False)          # e.g., 'image/webp'
-    data = db.Column(db.Text, nullable=False) 
-
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(255), unique=True, nullable=False, index=True)
+    email = db.Column(db.String(255), nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=True)  # 소셜 로그인은 비번 없을 수 있음
 
     # --- New Account Type Field ---
@@ -82,6 +71,9 @@ class User(db.Model):
     # --- System Fields ---
     is_banned = db.Column(db.Boolean, default=False, nullable=False)
     ban_reason = db.Column(db.Text, nullable=True)
+
+    show_birthday = db.Column(db.Boolean, default=True, nullable=False)
+    show_social_stats = db.Column(db.Boolean, default=True, nullable=False)
 
     # token = db.Column(db.String(128), unique=True, index=True)
     bio = db.Column(db.Text, default="")
@@ -149,6 +141,9 @@ class Conversation(db.Model):
     # This ensures that a conversation between two users can only exist once
     __table_args__ = (db.UniqueConstraint('user1_id', 'user2_id', name='_user_conversation_uc'),)
 
+class StoredAsset(db.Model):
+    key = db.Column(db.String(50), primary_key=True)
+    webp_base64 = db.Column(db.Text, nullable=False)
 
 class LoungeMember(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -348,77 +343,6 @@ def _post_lounge_join_message(user_id, lounge_id):
     }
     socketio.emit('new_lounge_message', message_payload, room=f"channel_{main_channel.id}")
 
-def seed_initial_assets():
-    assets_to_seed = [
-        {'name': 'default-avatar.png', 'path': 'default-avatar.png', 'mimetype': 'image/png'},
-        {'name': 'apex.png', 'path': 'apex.png', 'mimetype': 'image/png'},
-        {'name': 'apex2.png', 'path': 'apex2.png', 'mimetype': 'image/png'},
-        {'name': 'terms.txt', 'path': 'terms.txt', 'mimetype': 'text/plain'},
-        {'name': 'about.txt', 'path': 'about.txt', 'mimetype': 'text/plain'},
-        {'name': 'contact.txt', 'path': 'contact.txt', 'mimetype': 'text/plain'},
-    ]
-
-    for asset_info in assets_to_seed:
-        if not StoredAsset.query.filter_by(name=asset_info['name']).first():
-            try:
-                with open(asset_info['path'], 'rb') as f:
-                    file_bytes = f.read()
-                
-                # --- Process file into a Data URL ---
-                processed_data = None
-                asset_mimetype = asset_info['mimetype']
-
-                if asset_mimetype.startswith('image/'):
-                    with Image.open(io.BytesIO(file_bytes)) as img:
-                        img.thumbnail((512, 512))
-                        output_buffer = io.BytesIO()
-                        img.save(output_buffer, format='WEBP', quality=85)
-                        webp_image_bytes = output_buffer.getvalue()
-                    
-                    base64_webp = base64.b64encode(webp_image_bytes).decode('utf-8')
-                    processed_data = f"data:image/webp;base64,{base64_webp}"
-                    asset_mimetype = 'image/webp' # Update mimetype for storage
-                else:
-                    # For non-image files, create a standard data URL
-                    base64_data = base64.b64encode(file_bytes).decode('utf-8')
-                    processed_data = f"data:{asset_mimetype};base64,{base64_data}"
-
-                new_asset = StoredAsset(
-                    name=asset_info['name'],
-                    mimetype=asset_mimetype,
-                    data=processed_data
-                )
-                db.session.add(new_asset)
-                print(f"Seeded and processed asset: {asset_info['name']}")
-
-            except FileNotFoundError:
-                print(f"WARNING: Could not find {asset_info['path']}")
-            except Exception as e:
-                print(f"WARNING: Failed to process {asset_info['name']}: {e}")
-
-    db.session.commit()
-
-@app.get("/api/asset/<string:asset_name>")
-def get_asset(asset_name):
-    asset = StoredAsset.query.filter_by(name=asset_name).first()
-    if not asset:
-        return jsonify({"error": "Asset not found"}), 404
-
-    # --- Parse the Data URL from the database ---
-    try:
-        # asset.data is now a string like "data:image/webp;base64,..."
-        header, encoded_data = asset.data.split(",", 1)
-        decoded_bytes = base64.b64decode(encoded_data)
-
-        return send_file(
-            io.BytesIO(decoded_bytes),
-            mimetype=asset.mimetype,
-            as_attachment=False
-        )
-    except (ValueError, IndexError) as e:
-        print(f"Error parsing data URL for asset {asset_name}: {e}")
-        return "Internal server error: Invalid asset format", 500
-
 def get_lounge_role(user_id, lounge_id):
     membership = LoungeMember.query.filter_by(user_id=user_id, lounge_id=lounge_id).first()
     return membership.role if membership else None
@@ -536,31 +460,6 @@ def create_article():
     db.session.commit()
 
     return jsonify({"ok": True, "message": "Article created successfully!", "article_id": new_article.id}), 201
-
-@app.route('/asset/<path:asset_name>')
-def serve_asset(asset_name):
-    """
-    Serves a stored asset (like an image) from the database.
-    """
-    try:
-        asset = StoredAsset.query.filter_by(name=asset_name).first()
-
-        if asset:
-            # --- Parse the Data URL from the database ---
-            header, encoded_data = asset.data.split(",", 1)
-            decoded_bytes = base64.b64decode(encoded_data)
-            return send_file(
-                io.BytesIO(decoded_bytes),
-                mimetype=asset.mimetype,
-                as_attachment=False,
-                download_name=asset.name
-            )
-        else:
-            return "Asset not found", 404
-            
-    except Exception as e:
-        print(f"Error serving asset {asset_name}: {e}")
-        return "Internal server error", 500
 
 
 @app.get("/api/articles")
@@ -1131,18 +1030,116 @@ def request_lounge_access(lounge_id):
 
     return jsonify({"ok": True, "message": "Your request has been sent to the lounge owner."})
 
+@app.put("/api/lounge/<int:lounge_id>")
+def edit_lounge(lounge_id):
+    user = auth_user()
+    if not user:
+        return jsonify({"error": "unauthorized"}), 401
+
+    lounge = Lounge.query.get(lounge_id)
+    if not lounge:
+        return jsonify({"error": "Lounge not found"}), 404
+
+    # --- PERMISSION CHECK: Only the owner can edit ---
+    if lounge.owner_id != user.id:
+        return jsonify({"error": "Forbidden: You are not the owner of this lounge."}), 403
+
+    data = request.get_json(force=True)
+    name = data.get("name", "").strip()
+    description = data.get("description", "").strip()
+    cover_image_data_url = data.get("coverImage") # Can be null or Base64
+    processed_image_data = lounge.cover_image # Keep existing if not changed
+
+    # Validate inputs
+    if not name:
+        return jsonify({"error": "Lounge name cannot be empty"}), 400
+    if len(name) > 20:
+        return jsonify({"error": "Lounge name cannot exceed 20 characters"}), 400
+    if len(description) > 600:
+        return jsonify({"error": "Lounge description cannot exceed 600 characters"}), 400
+
+    # Process new cover image if provided
+    if cover_image_data_url and cover_image_data_url.startswith('data:image'):
+        try:
+            # (Re-use the same image processing logic from create_lounge)
+            header, encoded = cover_image_data_url.split(",", 1)
+            image_bytes = base64.b64decode(encoded)
+            with Image.open(io.BytesIO(image_bytes)) as img:
+                img.thumbnail((512, 512))
+                output_buffer = io.BytesIO()
+                img.save(output_buffer, format='WEBP', quality=85)
+                webp_image_bytes = output_buffer.getvalue()
+            base64_webp = base64.b64encode(webp_image_bytes).decode('utf-8')
+            processed_image_data = f"data:image/webp;base64,{base64_webp}"
+        except Exception as e:
+            print(f"Could not process edited lounge cover image: {e}")
+            # Optionally return an error or just skip updating the image
+    elif cover_image_data_url is None: # Allow explicitly removing the image
+        processed_image_data = None
+
+
+    # Update the lounge object
+    lounge.name = name
+    lounge.description = description
+    lounge.cover_image = processed_image_data
+
+    db.session.commit()
+
+    return jsonify({
+        "ok": True,
+        "message": "Lounge updated successfully!",
+        "lounge": { # Return updated details
+            "id": lounge.id,
+            "name": lounge.name,
+            "description": lounge.description,
+            "cover_image": lounge.cover_image,
+            "privacy": lounge.privacy # Privacy isn't editable here
+        }
+    })
+
+# Add a simple endpoint to get details needed for editing
+@app.get("/api/lounge/<int:lounge_id>/details")
+def get_lounge_details_for_edit(lounge_id):
+    user = auth_user()
+    if not user: return jsonify({"error": "unauthorized"}), 401
+
+    lounge = Lounge.query.get(lounge_id)
+    if not lounge: return jsonify({"error": "Lounge not found"}), 404
+
+    # Only owner needs full details for editing
+    if lounge.owner_id != user.id:
+         return jsonify({"error": "Forbidden"}), 403 # Or return limited info if needed elsewhere
+
+    return jsonify({
+        "id": lounge.id,
+        "name": lounge.name,
+        "description": lounge.description,
+        "cover_image": lounge.cover_image,
+        "privacy": lounge.privacy
+    })
+
+
 @app.get("/api/lounges")
 def get_lounges():
     user = auth_user()
     if not user:
         return jsonify({"error": "unauthorized"}), 401
 
-    # --- THIS IS THE FIX ---
-    # This single query now fetches ALL lounges, regardless of privacy.
-    # The frontend will handle the logic for how to display them.
+    # Get IDs of lounges the user is a member of
+    user_lounge_ids = {m.lounge_id for m in LoungeMember.query.filter_by(user_id=user.id).all()}
+
+    # Fetch all lounges initially
     all_lounges = Lounge.query.order_by(Lounge.created_at.desc()).all()
+
+    # --- THIS IS THE FIX ---
+    # Filter the list: Keep public lounges OR lounges the user is a member of
+    visible_lounges = [
+        lounge for lounge in all_lounges
+        if lounge.privacy == 'public' or lounge.id in user_lounge_ids
+    ]
     # --- END OF FIX ---
 
+    # Now, build the list using only the visible lounges
     lounge_list = [
         {
             "id": lounge.id,
@@ -1150,7 +1147,7 @@ def get_lounges():
             "description": lounge.description,
             "cover_image": lounge.cover_image,
             "privacy": lounge.privacy
-        } for lounge in all_lounges
+        } for lounge in visible_lounges # Use the filtered list here
     ]
     return jsonify(lounge_list)
 # In server.py, find and REPLACE your join_lounge function
@@ -1302,41 +1299,7 @@ def get_lounge_channels(lounge_id):
     })
 
 
-@app.post("/api/admin/db-command")
-def handle_db_command():
-    user = auth_user()
-    if not user or user.rank != 'admin':
-        return jsonify({"error": "Forbidden: Admin access required"}), 403
 
-    data = request.get_json(force=True)
-    command = data.get("command")
-    message = data.get("message")
-    
-    cmd_parts = ["flask", "db"]
-
-    if command == "init":
-        cmd_parts.append("init")
-    elif command == "migrate":
-        if not message:
-            return jsonify({"error": "A message is required for the migrate command."}), 400
-        cmd_parts.extend(["migrate", "-m", message])
-    elif command == "upgrade":
-        cmd_parts.append("upgrade")
-    else:
-        return jsonify({"error": "Invalid database command."}), 400
-
-    try:
-        # Execute the command and capture the output
-        result = subprocess.run(cmd_parts, capture_output=True, text=True, check=True)
-        output = result.stdout or "Command executed successfully with no output."
-        return jsonify({"ok": True, "message": output})
-    except subprocess.CalledProcessError as e:
-        # This catches errors from the flask command itself
-        error_output = e.stderr or e.stdout or "An unknown error occurred during command execution."
-        return jsonify({"ok": False, "error": error_output}), 500
-    except FileNotFoundError:
-        # This catches the error if 'flask' isn't in the system's PATH
-        return jsonify({"ok": False, "error": "Error: 'flask' command not found. The server environment may not be configured to run shell commands."}), 500
 
 # Modify the message fetching endpoint to get messages from a CHANNEL
 @app.get("/api/lounge/channel/<int:channel_id>/messages")
@@ -1595,35 +1558,6 @@ def get_circuits():
     ]
     return jsonify(circuit_list)
 
-def serve_simple_page(template_file, asset_name, page_title):
-    asset = StoredAsset.query.filter_by(name=asset_name).first()
-
-    if not asset:
-        return f"{page_title} page content not found.", 404
-
-    try:
-        header, encoded_data = asset.data.split(",", 1)
-        decoded_text = base64.b64decode(encoded_data).decode('utf-8')
-        
-        # --- THIS IS THE NEW LINE ---
-        # Convert the Markdown text to HTML
-        html_content = markdown.markdown(decoded_text)
-
-    except Exception as e:
-        print(f"Error decoding or converting {asset_name}: {e}")
-        return f"Could not load {page_title} page.", 500
-
-    # Pass the converted HTML to the template
-    return render_template(template_file, page_title=page_title, page_content=html_content)
-
-# --- Routes for the new pages ---
-@app.route('/about')
-def about_page():
-    return serve_simple_page('page_template.html', 'about.txt', 'About Us')
-
-@app.route('/contact')
-def contact_page():
-    return serve_simple_page('page_template.html', 'contact.txt', 'Contact Us')
 
 @app.get("/health")
 def health():
@@ -1639,92 +1573,145 @@ def health():
 
 @app.post("/api/signup")
 def signup():
-    # --- Create APEX user on first-ever signup if it doesn't exist ---
-    if not User.query.filter_by(username="APEX").first():
-        print("First signup detected, creating APEX user...")
-        system_user = User(username="APEX", email="apex@internal", rank="admin", password_hash="<UNUSABLE_PASSWORD>")
-        db.session.add(system_user)
-        db.session.commit()
+    print("\n--- [DEBUG] Received /api/signup request ---") # Log start
+    try:
+        data = request.get_json(force=True)
+        print(f"[DEBUG] Raw data received: {data}") # Log incoming data
+    except Exception as e:
+        print(f"[DEBUG] ERROR: Failed to parse JSON data: {e}")
+        return jsonify({"error": "Invalid request format"}), 400
 
     # --- Standard Signup Logic ---
-    data = request.get_json(force=True)
     email = (data.get("email") or "").strip().lower()
     password = (data.get("password") or "").strip()
-    full_name = data.get("fullName", "").strip()
+    full_name = data.get("full_name", "").strip() # Use snake_case
     username = data.get("username", "").strip()
     school = data.get("school", "")
-    account_type = data.get("accountType", "student")
+    account_type = data.get("account_type", "student") # Use snake_case
+    dob_str = data.get("dob") # Get DOB if present
+    subject = data.get("subject", "").strip() # Get subject if present
+
+    print(f"[DEBUG] Extracted Data: email={email}, username={username}, name={full_name}, school={school}, type={account_type}, dob={dob_str}, subject={subject}")
 
     # --- Input Validation Block ---
+    print("[DEBUG] Starting backend validation...")
     if not re.match(r'^[a-z0-9!._*-]{3,20}$', username):
+        print("[DEBUG] Validation FAILED: Username format incorrect.")
         return jsonify({
             "error": "Username must be 3-20 characters, lowercase, and can only contain letters, numbers, and !._-*"
         }), 400
-    if not re.match(r'^[a-zA-Z0-9!@#$%^&*()_+\-=<>,.?/]{5,}$', password):
-        return jsonify({
-            "error": "Password must be at least 5 characters and can only contain letters, numbers, and !@#$%^&*()_+-=<>,.?/"
-        }), 400
+    print("[DEBUG] Validation PASSED: Username format.")
+
+    if not password or len(password) < 5:
+        print("[DEBUG] Validation FAILED: Password criteria not met.")
+        return jsonify({"error": "Password must be at least 5 characters."}), 400
+    print("[DEBUG] Validation PASSED: Password length.")
+
+    if not email or not full_name or not username or not school:
+        print("[DEBUG] Validation FAILED: Missing required fields (email, name, user, school).")
+        return jsonify({"error": "Missing required fields"}), 400
+    print("[DEBUG] Validation PASSED: Required fields present.")
 
     # --- Existing User Checks ---
-    if not email or not password or not full_name or not username or not school:
-        return jsonify({"error": "Missing required fields"}), 400
-    if User.query.filter_by(email=email).first():
-        return jsonify({"error": "Email already registered"}), 409
+    print("[DEBUG] Checking for existing email/username...")
+
+    # --- THIS IS THE MODIFIED BLOCK ---
+    # Only check for email uniqueness if it's NOT a team account
+    if account_type != 'team':
+        if User.query.filter_by(email=email).first():
+            print("[DEBUG] Validation FAILED: Email already registered for a personal account.") # Updated log
+            return jsonify({"error": "Email already registered for a personal account"}), 409
+        print("[DEBUG] Validation PASSED: Email is unique (or it's a team account).")
+    else:
+        # If it IS a team account, explicitly log that we skipped the email check
+        print("[DEBUG] Validation SKIPPED: Email uniqueness check not required for team accounts.")
+    # --- END OF MODIFIED BLOCK ---
+
+    # Username MUST always be unique, regardless of account type
     if User.query.filter_by(username=username).first():
+        print("[DEBUG] Validation FAILED: Username is already taken.")
         return jsonify({"error": "Username is already taken"}), 409
+    print("[DEBUG] Validation PASSED: Username is unique.")
 
     # --- First Human User Admin Logic ---
     is_first_human_user = User.query.filter(User.username != "APEX").first() is None
     new_rank = 'admin' if is_first_human_user else 'user'
+    print(f"[DEBUG] Assigning rank: {new_rank}")
 
     # --- Create Base User Object ---
-    user = User(
-        email=email,
-        password_hash=generate_password_hash(password),
-        full_name=full_name,
-        username=username,
-        school=school,
-        account_type=account_type,
-        rank=new_rank,
-        provider="local"
-    )
+    try:
+        print("[DEBUG] Creating User object in memory...")
+        user = User(
+            email=email,
+            password_hash=generate_password_hash(password),
+            full_name=full_name,
+            username=username,
+            school=school,
+            account_type=account_type,
+            rank=new_rank,
+            provider="local"
+        )
+        print("[DEBUG] User object created.")
+    except Exception as e:
+        print(f"[DEBUG] ERROR: Failed to create User object: {e}")
+        return jsonify({"error": "Internal error creating user object."}), 500
 
-    # --- THIS IS THE REFACTORED AND CORRECTED LOGIC ---
-
-    # Handle fields for Students and Teachers together since they share DOB
+    # --- Account Type Specific Logic ---
+    print(f"[DEBUG] Processing account type specific fields: {account_type}")
     if account_type in ['student', 'teacher']:
-        dob_str = data.get("dob")
         if not dob_str:
+            print("[DEBUG] Validation FAILED: DOB missing for student/teacher.")
             return jsonify({"error": "Date of Birth is required for this account type"}), 400
         try:
-            datetime.strptime(dob_str, '%Y-%m-%d')
+            dob_date = datetime.strptime(dob_str, '%Y-%m-%d').date()
+            if dob_date > date.today():
+                 print("[DEBUG] Validation FAILED: DOB cannot be in the future.")
+                 return jsonify({"error": "Date of Birth cannot be in the future."}), 400
             user.dob = dob_str
+            print(f"[DEBUG] DOB set: {user.dob}")
         except ValueError:
+            print("[DEBUG] Validation FAILED: Invalid DOB format.")
             return jsonify({"error": "Invalid Date of Birth format. Please use the date picker."}), 400
 
-        # Student-specific logic
         if account_type == 'student':
             user.grade = infer_grade_from_email(email)
-
-        # Teacher-specific logic
-        if account_type == 'teacher':
-            user.subject = data.get("subject")
-            if not user.subject:
+            print(f"[DEBUG] Inferred grade: {user.grade}")
+        elif account_type == 'teacher':
+            if not subject: # Subject should have been extracted earlier
+                print("[DEBUG] Validation FAILED: Subject missing for teacher.")
                 return jsonify({"error": "Subject is required for teacher accounts"}), 400
+            user.subject = subject
+            print(f"[DEBUG] Subject set: {user.subject}")
 
-    # Handle fields for Team accounts
     elif account_type == 'team':
-        user.dob = None  # Teams do not have a DOB
-
-    # --- END OF REFACTORED LOGIC ---
+        user.dob = None # Explicitly set DOB to None for teams
+        print("[DEBUG] Team account, DOB set to None.")
+    print("[DEBUG] Account type specific fields processed.")
 
     # --- Save the New User ---
-    db.session.add(user)
-    db.session.commit()
-
-    # You might want to issue a token and log the user in directly here,
-    # but for now, we'll just confirm creation.
-    return jsonify({"ok": True, "message": "Account created successfully. Please log in."})
+    try:
+        print("[DEBUG] Attempting db.session.add(user)...")
+        db.session.add(user)
+        print("[DEBUG] User added to session.")
+        print("[DEBUG] Attempting db.session.commit()...")
+        db.session.commit()
+        print(f"--- [SUCCESS] User '{username}' committed to database! ---") # Log success
+        return jsonify({"ok": True, "message": "Account created successfully. Please log in."})
+    except Exception as e:
+        db.session.rollback() # IMPORTANT: Roll back changes if commit fails
+        print(f"--- [DATABASE ERROR] Commit FAILED for '{username}' ---") # Log failure
+        print(f"[DEBUG] Error details: {e}") # Log the specific database error
+        # Be more specific if possible, e.g., check for UNIQUE constraint errors
+        error_message = "A database error occurred. Could not create account."
+        if "UNIQUE constraint failed" in str(e):
+             # More specific error if it's a known constraint
+             if "user.username" in str(e):
+                 error_message = "Database error: Username already exists (internal check failed)."
+             elif "user.email" in str(e):
+                 error_message = "Database error: Email already exists (internal check failed)."
+             else:
+                 error_message = "Database error: A unique constraint failed."
+        return jsonify({"error": error_message}), 500 # Inform client
 
 
 @app.post("/api/login")
@@ -1794,6 +1781,69 @@ def logout():
 
     return jsonify({"ok": True})
 
+@app.route('/')
+def serve_index():
+    # This tells Flask to send the index.html file from the current directory
+    return send_from_directory('.', 'index.html')
+
+@app.route('/terms.txt')
+def serve_terms():
+    try:
+        with open('terms.txt', 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Convert the Markdown text to an HTML string
+        html_content = markdown.markdown(content)
+        
+        # Return the HTML content directly
+        return html_content
+    except FileNotFoundError:
+        return "Terms of Service not found.", 404
+
+@app.get("/api/asset/<key>")
+def get_asset(key):
+    asset = StoredAsset.query.get(key)
+    if not asset:
+        return jsonify({"error": "Asset not found"}), 404
+
+    try:
+        header, encoded = asset.webp_base64.split(",", 1)
+        mime_type = header.split(';')[0].split(':')[1]
+        image_data = base64.b64decode(encoded)
+        
+        response = make_response(image_data)
+        response.headers['Content-Type'] = mime_type
+        return response
+    except Exception as e:
+        print(f"Error serving asset '{key}': {e}")
+        return jsonify({"error": "Could not serve asset"}), 500
+
+def seed_assets():
+    assets_to_seed = {
+        'logo_icon': 'apex.png',
+        'logo_text': 'apex2.png',
+        'default_avatar': 'default-avatar.png'
+    }
+
+    for key, file_path in assets_to_seed.items():
+        if StoredAsset.query.get(key) or not os.path.exists(file_path):
+            continue
+
+        print(f"Storing asset '{key}' from '{file_path}' into the database...")
+        try:
+            with Image.open(file_path) as img:
+                output_buffer = io.BytesIO()
+                img.save(output_buffer, format='WEBP', quality=64)
+                webp_image_bytes = output_buffer.getvalue()
+
+            base64_webp = base64.b64encode(webp_image_bytes).decode('utf-8')
+            data_url = f"data:image/webp;base64,{base64_webp}"
+            new_asset = StoredAsset(key=key, webp_base64=data_url)
+            db.session.add(new_asset)
+        except Exception as e:
+            print(f"Error processing asset '{key}': {e}")
+    
+    db.session.commit()
 
 @app.post("/api/user/<username>/ban")
 def ban_user(username):
@@ -1862,31 +1912,12 @@ def system_send_dm():
         return jsonify({"error": "System user not found. Critical error."}), 500
 
     data = request.get_json(force=True)
-    message = data.get("message", "").strip()
-    to_username = data.get("to_username")
-    broadcast = data.get("broadcast", False)
-
-    # --- NEW: Handle special, non-messaging admin commands first ---
-    if message == "/update-assets":
-        if mod_user.rank != 'admin':
-            return jsonify({"error": "Forbidden: This command requires admin privileges."}), 403
-        
-        result = _reseed_assets_from_disk()
-        
-        # Send a confirmation DM back to the admin who ran the command
-        dm = DM(sender_id=system_user.id, receiver_id=mod_user.id, message=result["message"])
-        db.session.add(dm)
-        db.session.commit()
-        # Notify the admin's client in real-time
-        socketio.emit("dm_received", {
-            "from": system_user.username, "message": dm.message, "created_at": dm.created_at.isoformat() + "Z"
-        }, room=f"user_{mod_user.id}")
-        
-        return jsonify({"ok": True, "message": result["message"]})
-    # --- END OF NEW LOGIC ---
+    message = data.get("message", "")
+    to_username = data.get("to_username")  # For /warn
+    broadcast = data.get("broadcast", False)  # For /broadcast
 
     if not message:
-        return jsonify({"error": "Message is required for sending DMs"}), 400
+        return jsonify({"error": "Message is required"}), 400
 
     if broadcast:
         all_users = User.query.filter(User.username != "System").all()
@@ -1906,7 +1937,7 @@ def system_send_dm():
         return jsonify({"ok": True, "message": f"Warning sent to {to_username}."})
 
     else:
-        return jsonify({"error": "Recipient or broadcast flag required for messaging commands."}), 400
+        return jsonify({"error": "Recipient or broadcast flag required."}), 400
 
 
 @app.put("/api/circuit/<int:circuit_id>")
@@ -2094,45 +2125,6 @@ def get_lounge_reaction_users(message_id, emoji):
     usernames = [u.username for u in users]
     return jsonify(usernames)
 
-@app.route('/terms')
-def terms_page():
-    return serve_simple_page('page_template.html', 'terms.txt', 'Terms of Service')
-
-def _reseed_assets_from_disk():
-    """Reads all asset files from disk and updates them in the database."""
-    assets_to_seed = [
-        {'name': 'default-avatar.png', 'path': 'default-avatar.png', 'mimetype': 'image/png'},
-        {'name': 'apex.png', 'path': 'apex.png', 'mimetype': 'image/png'},
-        {'name': 'apex2.png', 'path': 'apex2.png', 'mimetype': 'image/png'},
-        {'name': 'terms.txt', 'path': 'terms.txt', 'mimetype': 'text/plain'},
-        {'name': 'about.txt', 'path': 'about.txt', 'mimetype': 'text/plain'},
-        {'name': 'contact.txt', 'path': 'contact.txt', 'mimetype': 'text/plain'},
-    ]
-    updated_count = 0
-    created_count = 0
-
-    for asset_info in assets_to_seed:
-        try:
-            with open(asset_info['path'], 'rb') as f:
-                file_bytes = f.read()
-            # This part is simplified for brevity but assumes your image processing logic is here
-            asset_mimetype = asset_info['mimetype']
-            base64_data = base64.b64encode(file_bytes).decode('utf-8')
-            processed_data = f"data:{asset_mimetype};base64,{base64_data}"
-            
-            existing_asset = StoredAsset.query.filter_by(name=asset_info['name']).first()
-            if existing_asset:
-                existing_asset.data = processed_data
-                updated_count += 1
-            else:
-                new_asset = StoredAsset(name=asset_info['name'], mimetype=asset_mimetype, data=processed_data)
-                db.session.add(new_asset)
-                created_count += 1
-        except Exception as e:
-            print(f"WARNING: During reseed, failed to process {asset_info['name']}: {e}")
-
-    db.session.commit()
-    return {"message": f"Content refresh complete. Updated: {updated_count}, Created: {created_count}."}
 
 @socketio.on('react_to_lounge_message')
 def handle_lounge_reaction(data):
@@ -2348,6 +2340,8 @@ def create_lounge_channel(lounge_id):
         "permission_level": new_channel.permission_level
     }), 201
 
+
+
 @app.delete("/api/lounge/channel/<int:channel_id>")
 def delete_lounge_channel(channel_id):
     user = auth_user()
@@ -2433,7 +2427,21 @@ def create_circuit_post(circuit_id):
     return jsonify({"ok": True, "message": "Post created successfully!"}), 201
 
 
-STOP_WORDS = set(['a', 'an', 'and', 'the', 'in', 'on', 'is', 'are', 'it', 'of', 'for', 'to', 'i'])
+STOP_WORDS = set([
+    'a', 'about', 'above', 'after', 'again', 'against', 'all', 'am', 'an', 'and', 
+    'any', 'are', 'as', 'at', 'be', 'because', 'been', 'before', 'being', 'below',
+    'between', 'both', 'but', 'by', 'can', 'did', 'do', 'does', 'doing', 'down',
+    'during', 'each', 'few', 'for', 'from', 'further', 'had', 'has', 'have', 
+    'having', 'he', 'her', 'here', 'hers', 'herself', 'him', 'himself', 'his', 
+    'how', 'i', 'if', 'in', 'into', 'is', 'it', 'its', 'itself', 'just', 'me', 
+    'more', 'most', 'my', 'myself', 'no', 'nor', 'not', 'now', 'of', 'off', 'on', 
+    'once', 'only', 'or', 'other', 'our', 'ours', 'ourselves', 'out', 'over', 
+    'own', 's', 'same', 'she', 'should', 'so', 'some', 'such', 't', 'than', 
+    'that', 'the', 'their', 'theirs', 'them', 'themselves', 'then', 'there', 
+    'these', 'they', 'this', 'those', 'through', 'to', 'too', 'under', 'until', 
+    'up', 'very', 'was', 'we', 'were', 'what', 'when', 'where', 'which', 'while', 
+    'who', 'whom', 'why', 'will', 'with', 'you', 'your', 'yours', 'yourself', 'yourselves'
+])
 
 
 @app.get("/api/search")
@@ -2452,17 +2460,25 @@ def search():
         return jsonify({"users": [], "circuits": [], "lounges": [], "articles": []})
 
     # 2. Build flexible filter conditions for each content type
-    user_filters = or_(*[User.full_name.ilike(f'%{term}%') for term in search_terms],
-                       *[User.username.ilike(f'%{term}%') for term in search_terms])
+    user_filters = or_(*(
+        [User.full_name.ilike(f'%{term}%') for term in search_terms] +
+        [User.username.ilike(f'%{term}%') for term in search_terms]
+    ))
 
-    circuit_filters = or_(*[Circuit.title.ilike(f'%{term}%') for term in search_terms],
-                          *[Circuit.host_school.ilike(f'%{term}%') for term in search_terms])
+    circuit_filters = or_(*(
+        [Circuit.title.ilike(f'%{term}%') for term in search_terms] +
+        [Circuit.host_school.ilike(f'%{term}%') for term in search_terms]
+    ))
 
-    lounge_filters = or_(*[Lounge.name.ilike(f'%{term}%') for term in search_terms],
-                         *[Lounge.description.ilike(f'%{term}%') for term in search_terms])
+    lounge_filters = or_(*(
+        [Lounge.name.ilike(f'%{term}%') for term in search_terms] +
+        [Lounge.description.ilike(f'%{term}%') for term in search_terms]
+    ))
 
-    article_filters = or_(*[Article.title.ilike(f'%{term}%') for term in search_terms],
-                          *[Article.content.ilike(f'%{term}%') for term in search_terms])
+    article_filters = or_(*(
+        [Article.title.ilike(f'%{term}%') for term in search_terms] +
+        [Article.content.ilike(f'%{term}%') for term in search_terms]
+    ))
 
     # 3. Execute all search queries, limiting results to 10 per category
     users = User.query.filter(user_filters).limit(10).all()
@@ -2470,23 +2486,33 @@ def search():
     lounges = Lounge.query.filter(lounge_filters).limit(10).all()
     articles = Article.query.filter(article_filters).limit(10).all()
 
-    my_posts = CircuitPost.query.filter_by(user_id=user.id).order_by(CircuitPost.created_at.desc()).limit(10).all()
-    my_liked_posts = CircuitPost.query.join(post_likes).filter(post_likes.c.user_id == user.id).order_by(CircuitPost.created_at.desc()).limit(10).all()
-    my_circuits = Circuit.query.filter_by(user_id=user.id).order_by(Circuit.id.desc()).limit(10).all()
-    my_owned_lounges = Lounge.query.filter_by(owner_id=user.id).order_by(Lounge.created_at.desc()).limit(10).all()
 
-    # --- THIS IS THE FIX: Use .strftime() to ensure UTC 'Z' format ---
-    results = {
-        "posts": [{"text": p.text, "circuit_title": p.circuit.title, "circuit_id": p.circuit.id, "host_school": p.circuit.host_school, "timestamp": p.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')} for p in my_posts],
-        "likes": [{"text": l.text, "original_author": l.author.full_name, "circuit_title": l.circuit.title, "circuit_id": l.circuit.id, "host_school": l.circuit.host_school, "timestamp": l.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')} for l in my_liked_posts],
-        "circuits": [{"title": c.title, "host_school": c.host_school, "id": c.id} for c in my_circuits],
-        "lounges": [{"name": l.name, "id": l.id, "timestamp": l.created_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')} for l in my_owned_lounges]
-    }
-    return jsonify(results)
+    return jsonify({
+        "users": [
+            {"username": u.username, "fullName": u.full_name, "rank": u.rank, "profile_pic": u.profile_pic}
+            for u in users
+        ],
+        "circuits": [
+            {"id": c.id, "title": c.title, "host_school": c.host_school, "coverImage": c.cover_image}
+            for c in circuits
+        ],
+        "lounges": [
+            {"id": l.id, "name": l.name, "description": l.description, "cover_image": l.cover_image}
+            for l in lounges
+        ],
+        "articles": [
+            {"id": a.id, "title": a.title, "author": a.author.full_name, "schoolTag": a.author.school}
+            for a in articles
+        ]
+    })
 
 @app.get("/api/trending")
 def get_trending_items():
-    limit = request.args.get('limit', 7, type=int)
+    # --- THIS IS THE NEW PART ---
+    # Get a limit from the request args, defaulting to 5.
+    # We'll fetch more for the "All Trending" page.
+    limit = request.args.get('limit', 5, type=int)
+    # --- END NEW PART ---
 
     today_kst = datetime.now(KST).date()
     yesterday_kst = today_kst - timedelta(days=1)
@@ -2512,6 +2538,7 @@ def get_trending_items():
     trending.sort(key=lambda x: (x['growth'], x['views']), reverse=True)
 
     top_items = []
+    # --- THIS PART NOW USES THE NEW LIMIT ---
     for item_data in trending[:limit]:
         if item_data['type'] == 'article':
             item = Article.query.get(item_data['id'])
@@ -2529,22 +2556,23 @@ def get_trending_items():
                     "hostSchool": item.host_school, "coverImage": item.cover_image,
                     "daily_views": item_data['views']
                 })
-        # This new part handles lounges
         elif item_data['type'] == 'lounge':
             item = Lounge.query.get(item_data['id'])
             if item:
                 top_items.append({
-                    "type": "lounge",
-                    "id": item.id,
-                    "name": item.name,
-                    "description": item.description,
-                    "cover_image": item.cover_image,
-                    "privacy": item.privacy,
+                    "type": "lounge", "id": item.id, "name": item.name,
+                    "description": item.description, "cover_image": item.cover_image,
                     "daily_views": item_data['views']
                 })
-
     return jsonify(top_items)
 
+@app.post("/api/lounge/<int:lounge_id>/view")
+def increment_lounge_view(lounge_id):
+    if not Lounge.query.get(lounge_id):
+        return jsonify({"error": "Lounge not found"}), 404
+    # This uses the same helper function as articles and circuits
+    views = _increment_view(lounge_id, 'lounge')
+    return jsonify({"ok": True, "views": views})
 
 # In server.py, update the /api/me endpoint:
 @app.get("/api/me")
@@ -2555,6 +2583,7 @@ def me():
 
     following_list = [u.username for u in user.following]
     post_count = CircuitPost.query.filter_by(user_id=user.id).count()
+    follower_count = user.followers.count()
     return jsonify({
         "email": user.email,
         "fullName": user.full_name,
@@ -2567,13 +2596,16 @@ def me():
         "created_at": user.created_at.isoformat(),
         "has_bio": bool(user.bio),
         "post_count": post_count,
+        "follower_count": follower_count,
         "following": following_list,
         "profile_pic": user.profile_pic,
         # --- ADD NEW FIELDS ---
         "account_type": user.account_type,
         "grade": user.grade,
         "subject": user.subject,
-        "is_birthday": is_users_birthday(user.dob)
+        "is_birthday": is_users_birthday(user.dob),
+        "show_birthday": user.show_birthday,
+        "show_social_stats": user.show_social_stats 
     })
 
 
@@ -2614,6 +2646,7 @@ def get_user_profile(username):
     if not user:
         return jsonify({"error": "User not found"}), 404
     post_count = CircuitPost.query.filter_by(user_id=user.id).count()
+    follower_count = user.followers.count()
     return jsonify({
         "username": user.username,
         "fullName": user.full_name,
@@ -2622,12 +2655,15 @@ def get_user_profile(username):
         "bio": user.bio,
         "rank": user.rank,
         "post_count": post_count,
+        "follower_count": follower_count,
         "profile_pic": user.profile_pic,
         # --- ADD NEW FIELDS ---
         "account_type": user.account_type,
         "grade": user.grade,
         "subject": user.subject,
-        "is_birthday": is_users_birthday(user.dob)
+        "is_birthday": is_users_birthday(user.dob),
+        "show_birthday": user.show_birthday,
+        "show_social_stats": user.show_social_stats
     })
 
 
@@ -2678,7 +2714,8 @@ def get_users():
             "rank": user.rank,
             "profile_pic": user.profile_pic,
             "account_type": user.account_type,
-            "is_birthday": is_users_birthday(user.dob)
+            "is_birthday": is_users_birthday(user.dob),
+            "show_birthday": user.show_birthday
         }
         for user in users
     ]
@@ -2772,13 +2809,6 @@ def increment_circuit_view(circuit_id):
     views = _increment_view(circuit_id, 'circuit')
     return jsonify({"ok": True, "views": views})
 
-@app.post("/api/lounge/<int:lounge_id>/view")
-def increment_lounge_view(lounge_id):
-    if not Lounge.query.get(lounge_id):
-        return jsonify({"error": "Lounge not found"}), 404
-    # Re-use the existing helper function
-    views = _increment_view(lounge_id, 'lounge')
-    return jsonify({"ok": True, "views": views})
 
 @app.put("/api/profile")  # 👈 Note the new URL
 def set_profile():
@@ -2797,6 +2827,9 @@ def set_profile():
 
     user.full_name = data.get("fullName", user.full_name).strip()
     user.bio = data.get("bio", user.bio)
+
+    user.show_birthday = data.get("showBirthday", user.show_birthday)
+    user.show_social_stats = data.get("showSocialStats", user.show_social_stats)
 
     profile_pic_data_url = data.get("profilePic")
     if profile_pic_data_url and profile_pic_data_url.startswith('data:image'):
@@ -3055,10 +3088,6 @@ def sent():
          "created_at": dm.created_at.isoformat()} for dm in dms
     ])
 
-@app.route('/')
-def index():
-    return render_template('index.html')
-
 
 # -------------------------------------------------
 # Socket.IO (실시간 DM)
@@ -3069,14 +3098,13 @@ def index():
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
+        seed_assets()
 
         # --- THIS IS THE FIX ---
-        # Seed initial assets like logos and default images
-        seed_initial_assets()
-
-        # Create ANNOUNCEMENTS user if it doesn't exist
+        # Create APEX user if it doesn't exist
         if not User.query.filter_by(username="ANNOUNCEMENTS").first():
-            print("Creating ANNOUNCEMENTS user...")
+            print("Creating APEX user...")
+            # The username is now 'APEX' and the email is 'apex@internal'
             system_user = User(username="ANNOUNCEMENTS", full_name="ANNOUNCEMENTS", email="apex@announcements",
                                rank="admin")
             db.session.add(system_user)
@@ -3086,6 +3114,9 @@ if __name__ == "__main__":
         # Seeding logic for circuits
         if not Circuit.query.first():
             print("Seeding database with initial circuits...")
+            # c1 = Circuit(title='KAIAC Soccer Finals 2025', host_school='YISS', code='100001')
+            # c2 = Circuit(title='SFS Fall Festival', host_school='SFS', code='100002')
+            # db.session.add_all([c1, c2])
             db.session.commit()
 
     port = int(os.environ.get("PORT", 5000))

@@ -729,6 +729,61 @@
             gap: 10px;
         }
 
+        footer {
+            background-color: #fff;
+            border-top: 1px solid #ddd;
+            padding: 20px 0; /* Increased vertical padding */
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .footer-content {
+            display: flex;
+            flex-direction: column; /* Stack version, links, copyright vertically */
+            align-items: center;
+            gap: 12px; /* Vertical gap between each element */
+        }
+
+        .footer-left {
+            order: -1; /* Keep version label at the top */
+        }
+
+        .version-label {
+            display: inline-block;
+            font-size: 0.85em;
+            background: var(--primary);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px; /* Small spacing below version */
+        }
+
+        .footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .footer-links a {
+            text-decoration: none;
+            color: #555;
+            font-size: 0.9em;
+            transition: color 0.2s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary-solid);
+        }
+
+        .footer-content p {
+            font-size: 0.8em;
+            color: #888;
+            margin-top: 10px;
+        }
+
         .profile-buttons button {
             background-image: var(--primary);
             color: white;
@@ -1347,6 +1402,33 @@
             color: transparent;
         }
 
+        .code-input-container {
+            margin: 25px 0;
+        }
+
+        #verificationCodeInput {
+            font-size: 2.5em; /* Make digits large */
+            letter-spacing: 15px; /* Space out the digits */
+            text-align: center;
+            padding-left: 15px; /* Adjust padding because of letter-spacing */
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            width: calc(100% - 44px); /* Full width minus padding/border */
+            background-position: 15px 0; /* This line doesn't hurt to keep */
+            box-sizing: border-box; /* Include padding/border in width */
+        }
+
+        #verificationCodeInput:focus {
+            border-color: var(--primary-solid);
+            box-shadow: 0 0 8px rgba(0, 102, 255, 0.3);
+        }
+
+        /* Style placeholder */
+        #verificationCodeInput::placeholder {
+            color: #e0e0e0;
+            letter-spacing: 15px; /* Match letter spacing */
+        }
+
         .loader {
             --background: linear-gradient(135deg, #23C4F8, #275EFE);
             --shadow: rgba(39, 94, 254, 0.28);
@@ -1696,6 +1778,67 @@
             cursor: pointer;
             color: #555;
         }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #efefef;
+        }
+        .setting-item-label {
+            font-weight: bold;
+            color: #333;
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        input:checked + .slider {
+            background-image: var(--primary);
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        /* --- Animation for the toggle --- */
+        input:checked + .slider {
+            animation: pulse-check 0.5s ease-out;
+        }
+        @keyframes pulse-check {
+            0% { box-shadow: 0 0 0 0 rgba(0, 102, 255, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 102, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 102, 255, 0); }
+        }
         .following-list {
             list-style: none;
             padding: 0;
@@ -1895,6 +2038,59 @@
             padding: 0;
             margin: 0;
         }
+
+        #tos-content {
+            font-family: Arial, sans-serif; /* A cleaner, more modern font */
+            line-height: 1.7; /* Increases spacing between lines for readability */
+            color: #333; /* A softer black for the main text */
+        }
+
+        /* Style for the main title (#) */
+        #tos-content h1 {
+            font-size: 2.2em;
+            font-weight: 700;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid;
+            /* Use the primary theme gradient for the border */
+            border-image: var(--primary) 1;
+        }
+
+        /* Style for section titles (##) */
+        #tos-content h2 {
+            font-size: 1.6em;
+            font-weight: 600;
+            margin-top: 40px; /* More space above each new section */
+            margin-bottom: 15px;
+            color: var(--primary-solid); /* Use your theme's solid blue color */
+        }
+
+        /* Style for paragraphs */
+        #tos-content p {
+            margin-bottom: 15px;
+        }
+
+        /* Style for bold text (**) */
+        #tos-content strong {
+            color: #000;
+            font-weight: 600;
+        }
+
+        /* Style for italic text (*) */
+        #tos-content em {
+            color: #555;
+            font-style: italic;
+        }
+
+        /* Style for numbered lists (1., 2.) */
+        #tos-content ol {
+            padding-left: 25px; /* Indent the list */
+            margin-bottom: 15px;
+        }
+
+#tos-content ol li {
+    margin-bottom: 8px; /* Space between list items */
+}
 
         .context-menu {
             position: absolute;
@@ -2121,61 +2317,6 @@
             z-index: 1;
 
             transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        footer {
-            background-color: #fff;
-            border-top: 1px solid #ddd;
-            padding: 20px 0; /* Increased vertical padding */
-            text-align: center;
-            margin-top: 40px;
-        }
-
-        .footer-content {
-            display: flex;
-            flex-direction: column; /* Stack version, links, copyright vertically */
-            align-items: center;
-            gap: 12px; /* Vertical gap between each element */
-        }
-
-        .footer-left {
-            order: -1; /* Keep version label at the top */
-        }
-
-        .version-label {
-            display: inline-block;
-            font-size: 0.85em;
-            background: var(--primary);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            margin-bottom: 4px; /* Small spacing below version */
-        }
-
-        .footer-links {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            justify-content: center;
-        }
-
-        .footer-links a {
-            text-decoration: none;
-            color: #555;
-            font-size: 0.9em;
-            transition: color 0.2s ease;
-        }
-
-        .footer-links a:hover {
-            color: var(--primary-solid);
-        }
-
-        .footer-content p {
-            font-size: 0.8em;
-            color: #888;
-            margin-top: 10px;
         }
 
         .theme-sidebar {
@@ -2554,6 +2695,13 @@
         .tos-container input {
             width: auto;
             margin: 0 5px 0 0;
+        }
+
+        #lounge-details-modal-description {
+            white-space: normal;      /* Allows the text to wrap to new lines */
+            word-wrap: break-word;    /* Breaks long words that would otherwise overflow */
+            overflow-y: auto;         /* Adds a scrollbar if the content is extremely long */
+            max-height: 40vh;         /* Limits the max height to 40% of the viewport height */
         }
 
         .tos-container a {
@@ -3167,7 +3315,7 @@
             border-radius: 50%;
             background-color: #e0e0e0;
             /* The default avatar is the fallback here */
-            background-image: var(--avatar-image, url('/api/asset/default-avatar.png'));
+            background-image: var(--avatar-image, url('/api/asset/default_avatar'));
             background-size: cover;
             background-position: center;
         }
@@ -3996,7 +4144,9 @@
 
         }
     </style>
-    <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js">
+    </script>
     <script>
         (function(){
             emailjs.init('9YeHbVpIjSJMooCnQ'); // Replace with your actual PUBLIC KEY (not service ID)
@@ -4069,8 +4219,7 @@
         <header>
             <div class="header-left">
                 <div class="logo">
-                    <img src="/asset/apex2.png" alt="APEX Logo" class="logo-img">
-
+                    <img src="/api/asset/logo_text" alt="APEX Logo" class="logo-img">
                 </div>
             </div>
             <div class="header-center">
@@ -4172,7 +4321,7 @@
     <div id="tos-page" class="page">
         <header>
             <div class="header-left">
-                <a href="#" class="fancy-back-button" onclick="showPage('signup-page')"><i class="fas fa-arrow-left"></i> Back to Register</a>
+                <a href="#" class="fancy-back-button" onclick="showPage(previousPageId || 'login-page')"><i class="fas fa-arrow-left"></i> Back</a>
             </div>
             <div class="header-center">
                 <p>Terms of Service</p>
@@ -4181,7 +4330,8 @@
         </header>
         <main>
             <div class="content-section">
-                <pre id="tos-content" style="white-space: pre-wrap; word-wrap: break-word;"></pre>
+                <div id="tos-content"></div>
+
             </div>
         </main>
     </div>
@@ -4203,25 +4353,6 @@
         </main>
     </div>
 
-    <div id="verify-page" class="page">
-        <header>
-            <div class="header-left">
-                <a href="#" class="fancy-back-button" onclick="showPage('signup-page')"><i class="fas fa-arrow-left"></i> Back</a>
-            </div>
-            <div class="header-center">
-                <p>Verify your email</p>
-            </div>
-            <div class="header-right"></div>
-        </header>
-        <main>
-            <div class="auth-form">
-                <h2>Verify your email</h2>
-                <p>Enter your verification code</p>
-                <input type="text" id="verificationCode" placeholder="Verification code" required maxlength="6">
-                <button onclick="verifyCode()">Verify</button>
-            </div>
-        </main>
-    </div>
 
     <div id="all-articles-page" class="page">
         <header>
@@ -4264,8 +4395,7 @@
         <header>
             <div class="header-left">
                 <a href="#" class="logo" onclick="showPage('index-page')">
-                    <img src="/api/asset/apex2.png" alt="APEX Logo" class="logo-img">
-
+                    <img src="/api/asset/logo_text" alt="APEX Logo" class="logo-img">
                 </a>
             </div>
             <div class="header-center">
@@ -4333,6 +4463,37 @@
         <main>
             <div id="all-lounges-grid" class="circuit-grid">
                 </div>
+        </main>
+    </div>
+
+    <div id="edit-lounge-page" class="page">
+        <header>
+            <div class="header-left">
+                <a href="#" class="fancy-back-button" onclick="showLounge(currentLoungeId, document.getElementById('lounge-header-title').textContent)"><i class="fas fa-arrow-left"></i> Back</a>
+            </div>
+            <div class="header-center"><p>Edit Lounge</p></div>
+            <div class="header-right">
+                <button class="login-btn" onclick="handleEditLounge(this)">Save Changes</button>
+            </div>
+        </header>
+        <main>
+            <div class="auth-form" style="max-width: 600px;">
+                <div class="circuit-cover-uploader">
+                    <label for="editLoungeCoverInput">Cover Image</label>
+                    <div id="editLoungeCoverPreview" class="circuit-cover-preview lounge-cover-preview-banner">
+                        <span>+ Upload Banner / Change</span>
+                    </div>
+                    <input type="file" id="editLoungeCoverInput" accept="image/*" style="display: none;">
+                </div>
+
+                <input type="text" id="editLoungeName" placeholder="Lounge Name" maxlength="20" style="margin-top: 15px;">
+                <span id="editLoungeNameCounter" class="char-counter" style="margin-bottom: 10px;">0 / 20</span>
+
+                <textarea id="editLoungeDescription" placeholder="A short description for your lounge..." rows="3" maxlength="600"></textarea>
+                <span id="editLoungeDescCounter" class="char-counter">0 / 600</span>
+
+                <p id="editLoungePrivacyDisplay" style="margin-top: 20px; color: #555; font-style: italic;">Privacy setting cannot be changed.</p>
+            </div>
         </main>
     </div>
 
@@ -4497,6 +4658,22 @@
                 <h3 style="margin-top: 30px;">Private Details</h3>
                 <input type="password" id="editPassword" placeholder="New Password (optional)">
                 <input type="password" id="editConfirmPassword" placeholder="Confirm New Password">
+
+                <h3 style="margin-top: 30px;">Privacy Settings</h3>
+                <div class="setting-item">
+                    <span class="setting-item-label">Show birthday icon on profile</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="editShowBirthday">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <span class="setting-item-label">Show follower/following counts</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="editShowSocialStats">
+                        <span class="slider"></span>
+                    </label>
+                </div>
             </div>
         </main>
     </div>
@@ -4583,7 +4760,7 @@
             <a href="#" class="nav-item" onclick="showProfile('me')">
                 <div class="profile-pic nav-user-pic" data-user-pic-id="me"></div>
             </a>
-            <a href="#" class="nav-item" onclick="showPage('report-page')"><i class="fas fa-bullhorn"></i></a>
+            <a href="#" class="nav-item" onclick="showReportPage(null, null)"><i class="fas fa-bullhorn"></i></a>
         </div>
     </nav>
 
@@ -4653,10 +4830,7 @@
                         <ul id="lounge-channels-list" class="lounge-channels-list">
                             </ul>
                     </div>
-                    <div class="lounge-channel-category">Voice Chat</div>
-                    <div class="lounge-channel-item">
-                        <span><i class="fas fa-headset" style="margin-right: 8px;"></i>General</span>
-                    </div>
+
                 </div>
 
                 <div class="active-lounge-pane">
@@ -4698,6 +4872,7 @@
         let apiToken = null;
         let socket = null;
         let newLoungeCoverUrl = null;
+        let previousPageId = 'login-page';
         let unreadSenders = new Set();
         let unreadNotificationCount = 0;
         let currentLoungeMessages = [];
@@ -4707,7 +4882,10 @@
         let currentCircuitPosts = [];
         let currentLoungeId = null;
         let dmImagePreviewUrl = null;
+        let reportEvidenceImageUrl = null;
         let loungeImagePreviewUrl = null;
+        let pendingSignupData = null; // To hold signup info during verification
+        let generatedVerificationCode = null; // To store the code we send
         const profileData = {
             me: {
                 name: '',
@@ -4852,16 +5030,51 @@
                 });
             }
 
-            document.addEventListener('click', () => {
-                closeAllPopups();
-                if (menuDropdown && !menuDropdown.classList.contains('hidden')) {
-                    menuDropdown.classList.add('hidden');
+            document.addEventListener('click', (event) => { // Added event parameter
+                closeAllPopups(event); // Pass event to popups if needed
+
+                // --- Safely close menus ---
+                const profileMenuDropdown = document.getElementById('profile-menu-dropdown');
+                const profileMenuButton = document.getElementById('profile-menu-button');
+                // Check if profileMenuDropdown exists AND the click was outside both the button and dropdown
+                if (profileMenuDropdown && !profileMenuDropdown.classList.contains('hidden') &&
+                    (!profileMenuButton || !profileMenuButton.contains(event.target)) &&
+                    !profileMenuDropdown.contains(event.target)) {
+                    profileMenuDropdown.classList.add('hidden');
                 }
-                const chatMenu = document.getElementById('chat-menu-dropdown');
-                if (chatMenu && !chatMenu.classList.contains('hidden')) {
-                    chatMenu.classList.add('hidden');
+
+                const chatMenuDropdown = document.getElementById('chat-menu-dropdown');
+                const chatMenuButton = document.getElementById('chat-menu-button');
+                 // Check if chatMenuDropdown exists AND the click was outside both the button and dropdown
+                if (chatMenuDropdown && !chatMenuDropdown.classList.contains('hidden') &&
+                    (!chatMenuButton || !chatMenuButton.contains(event.target)) &&
+                    !chatMenuDropdown.contains(event.target)) {
+                    chatMenuDropdown.classList.add('hidden');
                 }
-                closeThemeSidebar();
+
+                // --- Safely close theme sidebar ---
+                const themeSidebar = document.getElementById('theme-sidebar');
+                if (themeSidebar && !themeSidebar.classList.contains('hidden') && !themeSidebar.contains(event.target)) {
+                     // Optionally check if the click was also outside the button that opens it
+                     const themeOpenButton = document.querySelector('[onclick*="openThemeSidebar"]'); // Find the button
+                     if (!themeOpenButton || !themeOpenButton.contains(event.target)) {
+                         closeThemeSidebar();
+                     }
+                }
+
+                // --- Close Modals on background click ---
+                if (event.target.classList.contains('following-modal')) {
+                    // Close specific modals by checking their visibility or content
+                    closeFollowingModal(); // Assumes this checks if it's open
+                    closeLoungeMembersModal();
+                    closeLoungeDetailsModal();
+                    closeCircuitDetailsModal();
+                    closeNewChatModal();
+                    closeInviteUserModal();
+                    closeCreateChannelModal();
+                    closeConfirmationModal(); // Added confirmation modal
+                    // Add other modals here
+                }
             });
 
             // --- Post Modal Closing Logic (unchanged) ---
@@ -5059,7 +5272,7 @@
                             `;
                             container.appendChild(card);
                         }
-                        // --- ADD THIS NEW CASE FOR LOUNGES ---
+                        // --- 👇 ADD THIS ENTIRE BLOCK 👇 ---
                         else if (item.type === 'lounge') {
                             const card = document.createElement('div');
                             card.className = 'circuit-card'; // Reuse the same circular card style
@@ -5076,7 +5289,7 @@
                             `;
                             container.appendChild(card);
                         }
-                        // --- END OF NEW CASE ---
+                        // --- 👆 END OF NEW BLOCK 👆 ---
                     });
                 })
                 .catch(error => {
@@ -5745,8 +5958,135 @@
             });
         }
 
+        let editLoungeCoverUrl = null;
+
+        function showEditLoungePage(loungeId) {
+            console.log(`[Debug] Showing edit page for lounge ID: ${loungeId}`);
+            // Fetch the current lounge details to populate the form
+            fetch(`${API_BASE_URL}/api/lounge/${loungeId}/details`, {
+                headers: { 'Authorization': `Bearer ${apiToken}` }
+            })
+            .then(response => response.json())
+            .then(lounge => {
+                if (lounge.error) {
+                    showToast(lounge.error, 'error');
+                    return;
+                }
+
+                // Populate form fields
+                const nameInput = document.getElementById('editLoungeName');
+                const descInput = document.getElementById('editLoungeDescription');
+                const nameCounter = document.getElementById('editLoungeNameCounter');
+                const descCounter = document.getElementById('editLoungeDescCounter');
+                const privacyDisplay = document.getElementById('editLoungePrivacyDisplay');
+                const preview = document.getElementById('editLoungeCoverPreview');
+                const fileInput = document.getElementById('editLoungeCoverInput');
+
+                nameInput.value = lounge.name;
+                descInput.value = lounge.description || '';
+                nameCounter.textContent = `${lounge.name.length} / 20`;
+                descCounter.textContent = `${(lounge.description || '').length} / 600`;
+                privacyDisplay.textContent = `Privacy setting (${lounge.privacy}) cannot be changed.`;
+
+                // Set up image preview and uploader
+                editLoungeCoverUrl = lounge.cover_image; // Start with the current image URL
+                if (lounge.cover_image) {
+                    preview.style.backgroundImage = `url(${lounge.cover_image})`;
+                    preview.innerHTML = '';
+                } else {
+                    preview.style.backgroundImage = 'none';
+                    preview.innerHTML = '<span>+ Upload Banner</span>';
+                }
+
+                // Add character counters (similar to create lounge)
+                nameInput.oninput = () => nameCounter.textContent = `${nameInput.value.length} / 20`;
+                descInput.oninput = () => descCounter.textContent = `${descInput.value.length} / 600`;
+
+                // Set up file input handling
+                preview.onclick = () => fileInput.click();
+                fileInput.value = null; // Clear any previous selection
+                fileInput.onchange = (event) => {
+                    const file = event.target.files[0];
+                    if (!file) { // Allow removing the image
+                        editLoungeCoverUrl = null;
+                        preview.style.backgroundImage = 'none';
+                        preview.innerHTML = '<span>+ Upload Banner</span>';
+                        return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        editLoungeCoverUrl = e.target.result; // Store the new Base64 URL
+                        preview.style.backgroundImage = `url(${editLoungeCoverUrl})`;
+                        preview.innerHTML = '';
+                    };
+                    reader.readAsDataURL(file);
+                };
+
+                // Finally, show the page
+                showPage('edit-lounge-page');
+
+            })
+            .catch(error => {
+                console.error("Error fetching lounge details for edit:", error);
+                showToast("Could not load lounge details.", 'error');
+            });
+        }
+
+        function handleEditLounge(button) {
+            button.disabled = true;
+            button.textContent = 'Saving...';
+
+            const name = document.getElementById('editLoungeName').value.trim();
+            const description = document.getElementById('editLoungeDescription').value.trim();
+            // editLoungeCoverUrl holds either the original URL, a new Base64 URL, or null if removed
+            const coverImage = editLoungeCoverUrl;
+
+            if (!name) {
+                showToast('Lounge name is required.', 'error');
+                button.disabled = false;
+                button.textContent = 'Save Changes';
+                return;
+            }
+            // Add other validations if needed (lengths are handled by backend now)
+
+            fetch(`${API_BASE_URL}/api/lounge/${currentLoungeId}`, { // Use currentLoungeId
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiToken}` },
+                body: JSON.stringify({ name: name, description: description, coverImage: coverImage })
+            })
+            .then(response => response.json().then(data => ({ status: response.status, body: data })))
+            .then(({ status, body }) => {
+                if (status === 200 && body.ok) {
+                    showToast('Lounge updated successfully!', 'success');
+                    // Update local cache if necessary (e.g., allLoungesData)
+                    const index = allLoungesData.findIndex(l => l.id === currentLoungeId);
+                    if (index > -1) {
+                        allLoungesData[index].name = body.lounge.name;
+                        allLoungesData[index].description = body.lounge.description;
+                        allLoungesData[index].cover_image = body.lounge.cover_image;
+                    }
+                    // Go back to the updated lounge page
+                    showLounge(currentLoungeId, body.lounge.name);
+                } else {
+                    showToast(body.error || 'Could not update lounge.', 'error');
+                }
+            })
+            .catch(error => {
+                console.error("Error updating lounge:", error);
+                showToast("An unexpected error occurred.", 'error');
+            })
+            .finally(() => {
+                 // Ensure button is re-enabled only if still on the edit page
+                if (document.getElementById('edit-lounge-page').classList.contains('active')) {
+                    button.disabled = false;
+                    button.textContent = 'Save Changes';
+                }
+            });
+        }
+
         // Add this new function to show a specific lounge's chat
         function showLounge(loungeId, loungeName) {
+            
             fetch(`${API_BASE_URL}/api/lounge/${loungeId}/view`, { method: 'POST', headers: { 'Authorization': `Bearer ${apiToken}` } });
             if (currentLoungeChannelId && socket) {
                 socket.emit('leave_lounge_channel', { channel_id: currentLoungeChannelId });
@@ -5935,90 +6275,7 @@
             closeNewChatModal();
         }
 
-        function showPage(pageId) {
-            closeAllPopups();
-            // --- Page Switching ---
-            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
-            document.getElementById(pageId).classList.add('active');
-
-            if (pageId === 'login-page') {
-                loggedIn = false;
-            }
-
-            // --- Layout and UI Control ---
-            const sideNav = document.querySelector('.side-nav');
-            const footer = document.querySelector('footer');
-            const terminalBtn = document.getElementById('terminal-nav-btn');
-            const mainHeader = document.getElementById('mainHeaderTitle');
-            const isAuthPage = ['login-page', 'signup-page', 'account-type-selection-page', 'verify-page', 'tos-page'].includes(pageId);
-
-            if (isAuthPage) {
-                sideNav.style.display = 'none';
-                footer.style.display = 'none';
-                document.body.classList.remove('with-sidebar');
-                if (mainHeader) mainHeader.textContent = 'Log in';
-            } else {
-                sideNav.style.display = 'flex';
-                document.body.classList.add('with-sidebar');
-                if (['messages-page', 'terminal-page', 'lounge-page'].includes(pageId)) {
-                    footer.style.display = 'none';
-                } else {
-                    footer.style.display = 'block';
-                }
-                const userRank = profileData.me.rank;
-                if (terminalBtn) {
-                    terminalBtn.style.display = (userRank === 'admin' || userRank === 'moderator') ? 'flex' : 'none';
-                }
-                if (mainHeader) {
-                    mainHeader.innerHTML = `${profileData.me.username || profileData.me.name} ${getRankIcon(profileData.me.rank)}`;
-                }
-            }
-
-            // --- Page-Specific Data Loading ---
-            if (pageId === 'index-page') {
-                fetchAndRenderProfiles();
-                fetchAndRenderLounges();
-                fetchAndRenderTrending();
-            } else if (pageId === 'all-profiles-page') {
-                renderAllProfiles();
-            } else if (pageId === 'messages-page') {
-                renderChatList();
-                updateNotificationBadge();
-                if (currentChatRecipient) {
-                    renderActiveChat();
-                } else {
-                    document.getElementById('active-chat-header').innerHTML = '';
-                    document.getElementById('chat-body').innerHTML = '<div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100%; color:#8e8e8e;"><i class="fas fa-paper-plane" style="font-size:4em; margin-bottom:15px;"></i><h3 style="margin:0; font-size:1.4em;">Your Messages</h3><p>Send a message to start a chat.</p></div>';
-                }
-            } else if (pageId === 'explore-page') {
-                // --- ▼▼▼ THIS IS THE FIX ▼▼▼ ---
-                fetchAndRenderMyLounges(); // Add this line to load your lounges
-                // --- ▲▲▲ END OF FIX ▲▲▲ ---
-                renderArticles();
-                fetchAndRenderCircuits();
-                const createArticleBtn = document.getElementById('create-article-btn');
-                if (profileData.me.rank === 'admin' || profileData.me.rank === 'moderator') {
-                    createArticleBtn.style.display = 'inline-block';
-                } else {
-                    createArticleBtn.style.display = 'none';
-                }
-            } else if (pageId === 'notifications-page') {
-                fetchNotifications(true);
-                fetch(`${API_BASE_URL}/api/notifications/mark-all-read`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${apiToken}` }
-                }).then(() => {
-                    unreadNotificationCount = 0;
-                    updateGeneralNotificationBadge();
-                });
-            } else if (pageId === 'all-lounges-page') {
-                renderAllLoungesGrid();
-            } else if (pageId === 'all-trending-page') {
-                renderAllTrending();
-            } else if (pageId === 'create-article-page') {
-                initializeQuillEditor();
-            }
-        }
+    
 
         function showCreateLoungePage() {
             // --- ADD LIVE CHARACTER COUNTERS ---
@@ -6078,6 +6335,78 @@
                 profileData.me = {}; // Clear user data
                 showPage('login-page');
             });
+        }
+
+        function handleVerifyCode(verifyButton) {
+            const enteredCode = document.getElementById('verificationCodeInput').value.trim();
+
+            if (enteredCode.length !== 6) {
+                showToast('Please enter the 6-digit code.', 'error');
+                return;
+            }
+
+            // ADD DEBUG LOGS HERE
+            console.log("[Debug] Entered Code:", enteredCode);
+            console.log("[Debug] Expected Code:", generatedVerificationCode);
+            console.log("[Debug] Pending Signup Data before fetch:", pendingSignupData);
+
+            if (enteredCode === generatedVerificationCode) {
+                // Code is correct, proceed with server-side signup
+                console.log("[Debug] Verification code MATCHES. Preparing to call /api/signup..."); // <-- ADD THIS
+                verifyButton.disabled = true;
+                verifyButton.textContent = 'Verifying...';
+
+                if (!pendingSignupData) {
+                    console.error("[Debug] ERROR: pendingSignupData is missing!"); // <-- ADD THIS
+                    showToast('Signup data lost. Please go back and try again.', 'error');
+                    verifyButton.disabled = false;
+                    verifyButton.textContent = 'Verify Code';
+                    return;
+                }
+
+                // ADD A LOG RIGHT BEFORE FETCH
+                console.log("[Debug] Sending fetch request to /api/signup with data:", JSON.stringify(pendingSignupData)); // <-- ADD THIS
+
+                fetch(`${API_BASE_URL}/api/signup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(pendingSignupData), // Use the stored data
+                })
+                .then(response => { // ADD response logging
+                    console.log("[Debug] Received response from /api/signup:", response.status, response.statusText);
+                    return response.json().then(data => ({ status: response.status, body: data }));
+                })
+                .then(({ status, body }) => {
+                    console.log("[Debug] Parsed response body:", body); // ADD body logging
+                    if (status === 200 && body.ok) {
+                        showToast('Verification successful! Account created.', 'success');
+                        pendingSignupData = null; // Clear temporary data
+                        generatedVerificationCode = null;
+                        showPage('login-page'); // Redirect to login
+                    } else {
+                        showToast(body.error || 'Signup failed after verification.', 'error');
+                        // Optionally redirect back to signup page on server error
+                        // showPage('signup-page');
+                    }
+                })
+                .catch(error => {
+                    console.error('[Debug] Fetch to /api/signup FAILED:', error); // <-- ADD THIS
+                    showToast('An error occurred during final signup. Please try again.', 'error');
+                })
+                .finally(() => {
+                    console.log("[Debug] Fetch finally block executed."); // <-- ADD THIS
+                    if (document.getElementById('verify-page').classList.contains('active')) {
+                        verifyButton.disabled = false;
+                        verifyButton.textContent = 'Verify Code';
+                    }
+                });
+
+            } else {
+                // Code is incorrect
+                console.log("[Debug] Verification code MISMATCH."); // <-- ADD THIS
+                showToast('Incorrect verification code.', 'error');
+                document.getElementById('verificationCodeInput').value = ''; // Clear input
+            }
         }
 
         function checkForSavedSession() {
@@ -6224,7 +6553,8 @@
                     picElement.classList.add('rank-moderator');
                 }
 
-                picElement.classList.toggle('birthday-user', user.is_birthday === true);
+                picElement.classList.toggle('birthday-user', user.is_birthday === true && user.show_birthday === true);
+
             });
         }
 
@@ -6308,6 +6638,15 @@
             });
         }
 
+        function formatPostTimestamp(date) {
+            if (!(date instanceof Date) || isNaN(date)) return '';
+            // Example format: Oct 19, 2025, 10:30 PM
+            return date.toLocaleString('en-US', {
+                month: 'short', day: 'numeric', year: 'numeric',
+                hour: 'numeric', minute: '2-digit', hour12: true
+            });
+        }
+
         function formatDateSeparator(dateString) {
             const today = new Date();
             const yesterday = new Date();
@@ -6328,6 +6667,16 @@
                 day: 'numeric',
                 year: 'numeric'
             });
+        }
+
+        function resendVerificationCode() {
+            if (!pendingSignupData || !pendingSignupData.email) {
+                showToast('Could not retrieve email to resend code. Please go back.', 'error');
+                return;
+            }
+            // Reuse the sendVerificationCode function
+            showToast('Resending verification code...', 'success'); // Give user feedback
+            sendVerificationCode(pendingSignupData.email, pendingSignupData.fullName, null); // Pass null for button as we're not on signup page
         }
 
         function populateProfileData(userData) {
@@ -6392,27 +6741,44 @@
             .catch(error => console.error("Could not fetch conversations:", error));
         }
 
-        function sendVerificationCode() {
-            const email = document.getElementById('signupEmail').value.trim();
-            if (!email) {
-                alert('Enter your email');
-                return;
-            }
-            const code = generateVerificationCode();
-            profileData.me.verificationCode = code;
+        
+
+        function sendVerificationCode(email, name, signupButton) {
+            generatedVerificationCode = Math.floor(100000 + Math.random() * 900000).toString(); // Generate 6-digit code
+            console.log("Generated Verification Code:", generatedVerificationCode); // For testing
+
+            // --- THIS IS THE FIX ---
             const templateParams = {
-                to_email: email,
-                to_name: profileData.me.name || 'User',
-                verification_code: code
+                email: email, // Use 'email' to match your EmailJS template
+                to_name: name || 'User',
+                verification_code: generatedVerificationCode
             };
-            emailjs.send('service_2x7d4jf', 'template_kxxodjk', templateParams)
+            // --- END OF FIX ---
+
+            // Use your NEW Service ID and Template ID for Verification
+            const serviceID = 'service_2x7d4jf';
+            const templateID = 'template_kxxodjk'; // Corrected ID
+
+            // Show loading state on the signup button while sending
+            if (signupButton) {
+                signupButton.textContent = 'Sending Code...';
+                signupButton.disabled = true;
+            }
+
+            emailjs.send(serviceID, templateID, templateParams)
                 .then(function(response) {
-                    alert(`Verification code sent to ${email}.`);
-                    verificationCodeSent = true;
-                    showPage('verify-page');
+                    console.log('Verification Email SUCCESS!', response.status, response.text);
+                    document.getElementById('verify-email-display').textContent = email; // Show email on verify page
+                    showPage('verify-page'); // Go to verification page
                 }, function(error) {
-                    console.error('FAILED...', error);
-                    alert('Failed to send verification email. Please try again.');
+                    console.error('FAILED to send verification email...', error);
+                    // Display the specific error from EmailJS
+                    showToast(`Failed to send verification email. Error: ${error.text || 'Check console.'}`, 'error');
+                    // Re-enable the signup button if sending fails
+                    if (signupButton) {
+                        signupButton.disabled = false;
+                        signupButton.textContent = 'Register';
+                    }
                 });
         }
 
@@ -6638,6 +7004,9 @@
                 charCounter.textContent = `${currentLength} / 150`;
             };
 
+            document.getElementById('editShowBirthday').checked = profileData.me.show_birthday;
+            document.getElementById('editShowSocialStats').checked = profileData.me.show_social_stats;
+
             const preview = document.getElementById('editProfilePicPreview');
             // --- THIS IS THE FIX ---
             // Instead of setting the background image directly, we now set the
@@ -6680,6 +7049,8 @@
             const username = document.getElementById('editUsername').value;
             const bio = document.getElementById('editBio').value;
             const profilePicData = profileData.me.profilePicUrl;
+            const showBirthday = document.getElementById('editShowBirthday').checked;
+            const showSocialStats = document.getElementById('editShowSocialStats').checked;
 
             fetch(`${API_BASE_URL}/api/profile`, {
                 method: 'PUT',
@@ -6691,7 +7062,9 @@
                     fullName: fullName,
                     username: username,
                     bio: bio,
-                    profilePic: profilePicData
+                    profilePic: profilePicData,
+                    showBirthday: showBirthday,
+                    showSocialStats: showSocialStats
                 })
             })
             .then(response => response.json().then(data => ({ status: response.status, body: data })))
@@ -6898,6 +7271,67 @@
                 console.error("Error fetching chat history:", error);
                 chatBody.innerHTML = '<p style="text-align:center; color:red;">Could not load messages.</p>';
             });
+        }
+
+        function prepareSignupForm(type) {
+            console.log(`[Debug] prepareSignupForm called with type: ${type}`); // <-- ADD THIS LOG
+
+            currentSignupType = type;
+
+            // Get form elements
+            const fullNameInput = document.getElementById('signupFullName');
+            const usernameInput = document.getElementById('signupUsername');
+            const schoolSelect = document.getElementById('signupSchool');
+            const emailInput = document.getElementById('signupEmail');
+            const passwordInput = document.getElementById('signupPassword');
+            const confirmPasswordInput = document.getElementById('signupConfirmPassword');
+            const tosCheckbox = document.getElementById('signupTos');
+            const dobInput = document.getElementById('signupDOB');
+            const subjectInput = document.getElementById('signupSubject');
+            const formTitle = document.getElementById('signup-form-title');
+
+            // --- Clear Fields Block (Keep this) ---
+            fullNameInput.value = '';
+            usernameInput.value = '';
+            schoolSelect.value = '';
+            emailInput.value = '';
+            passwordInput.value = '';
+            confirmPasswordInput.value = '';
+            tosCheckbox.checked = false;
+            dobInput.value = '';
+            subjectInput.value = '';
+            clearAllValidationErrors('signup-page');
+            // --- End Clearing Block ---
+
+            // Reset dynamic field visibility first
+            subjectInput.style.display = 'none';
+            dobInput.style.display = 'none';
+
+            // Configure form based on selected type
+            if (type === 'student') {
+                formTitle.textContent = 'Register as Student';
+                fullNameInput.placeholder = 'Full Name';
+                dobInput.style.display = 'block';
+            } else if (type === 'teacher') {
+                formTitle.textContent = 'Register as Teacher';
+                fullNameInput.placeholder = 'Full Name';
+                dobInput.style.display = 'block';
+                subjectInput.style.display = 'block';
+            } else if (type === 'team') {
+                formTitle.textContent = 'Register Team Account';
+                fullNameInput.placeholder = 'Team Name';
+            }
+
+            // --- Reset the button state (Keep this) ---
+            const signupButton = document.querySelector('#signup-page button[onclick^="handleSignup"]');
+            if (signupButton) {
+                signupButton.disabled = false;
+                signupButton.textContent = 'Register';
+            }
+            // --- END button reset ---
+
+            console.log("[Debug] prepareSignupForm finished setup. Calling showPage('signup-page')..."); // <-- ADD THIS LOG
+            showPage('signup-page');
         }
 
         function processImage(file, maxWidth = 800) {
@@ -7112,7 +7546,7 @@
             const emailElement = document.getElementById('userEmail');
             const gradeElement = document.getElementById('userAge');
             const mainPic = document.querySelector('#profile-page .profile-pic-large');
-            const statsBar = document.getElementById('profile-stats-bar'); // Get the new stats bar
+            const statsBar = document.getElementById('profile-stats-bar');
 
             // Hide stats bar by default while we load data
             statsBar.style.display = 'none';
@@ -7143,13 +7577,12 @@
                 document.getElementById('userName').innerHTML = `${fullProfile.fullName} ${getRankIcon(fullProfile.rank)} ${tagHtml}`;
 
                 let bioText = fullProfile.bio || '';
-                // This part handles the rainbow bio effect
                 if (bioText.trim().startsWith('//rainbow ')) {
                     const rainbowContent = bioText.substring(10);
-                    bioElement.innerHTML = linkifyUsernames(rainbowContent); // Use innerHTML
+                    bioElement.innerHTML = linkifyUsernames(rainbowContent);
                     bioElement.classList.add('rainbow-text');
                 } else {
-                    bioElement.innerHTML = linkifyUsernames(bioText); // Use innerHTML here too
+                    bioElement.innerHTML = linkifyUsernames(bioText);
                     bioElement.classList.remove('rainbow-text');
                 }
                 bioElement.style.display = bioText.trim() ? 'block' : 'none';
@@ -7167,21 +7600,35 @@
                     gradeElement.style.display = 'none';
                 }
 
-                // --- NEW: LOGIC FOR STATS BAR ---
-                statsBar.style.display = 'flex'; // Show the bar now that we have data
-                document.getElementById('post-count').textContent = fullProfile.post_count || 0;
-                const followingStat = document.getElementById('following-stat');
-
-                if (isMe) {
-                    // If it's my profile, show my following count and make it clickable
-                    document.getElementById('following-count').textContent = followingList.length;
-                    followingStat.classList.add('clickable');
-                    followingStat.onclick = () => openFollowingModal();
+                // --- NEW: Birthday Icon Privacy Check ---
+                // Check both if it's their birthday AND if they allow it to be shown
+                if (fullProfile.is_birthday && fullProfile.show_birthday) {
+                    mainPic.classList.add('birthday-user');
                 } else {
-                    // If it's someone else's profile, show a dash and make it unclickable
-                    document.getElementById('following-count').textContent = '-';
-                    followingStat.classList.remove('clickable');
-                    followingStat.onclick = null;
+                    mainPic.classList.remove('birthday-user');
+                }
+
+                // --- NEW: Stats Bar Privacy Check ---
+                if (fullProfile.show_social_stats) {
+                    statsBar.style.display = 'flex'; // Show the bar now that we have data
+                    document.getElementById('post-count').textContent = fullProfile.post_count || 0;
+                    document.getElementById('follower-count').textContent = fullProfile.follower_count || 0;
+                    const followingStat = document.getElementById('following-stat');
+
+                    if (isMe) {
+                        // If it's my profile, show my following count and make it clickable
+                        document.getElementById('following-count').textContent = followingList.length;
+                        followingStat.classList.add('clickable');
+                        followingStat.onclick = () => openFollowingModal();
+                    } else {
+                        // If it's someone else's profile, show a dash and make it unclickable
+                        document.getElementById('following-count').textContent = '-';
+                        followingStat.classList.remove('clickable');
+                        followingStat.onclick = null;
+                    }
+                } else {
+                    // If they've hidden their stats, hide the whole bar
+                    statsBar.style.display = 'none';
                 }
             })
             .catch(err => console.error("Failed to fetch full profile:", err));
@@ -7191,7 +7638,6 @@
             headerRight.innerHTML = ''; // Clear old buttons/menu
 
             if (isMe) {
-                // --- THIS IS THE NEW MENU FOR YOUR OWN PROFILE ---
                 const menuButton = document.createElement('div');
                 menuButton.className = 'profile-menu-button';
                 menuButton.innerHTML = `<i class="fas fa-ellipsis-v"></i>`;
@@ -7213,10 +7659,8 @@
                     event.stopPropagation();
                     menuDropdown.classList.toggle('hidden');
                 };
-                // --- END OF NEW MENU ---
 
             } else {
-                // This is the existing menu for viewing other people's profiles
                 const menuButton = document.createElement('div');
                 menuButton.className = 'profile-menu-button';
                 menuButton.innerHTML = `<i class="fas fa-ellipsis-v"></i>`;
@@ -7252,6 +7696,7 @@
                 card.insertAdjacentHTML('beforeend', buttonsHTML);
             }
         }
+
 
         function formatTimestamp(date) {
             // Ensure we're working with a valid Date object
@@ -7653,56 +8098,157 @@
 
         // New function to prepare and show the dynamic signup form
 
-        function prepareSignupForm(type) {
-            currentSignupType = type;
+        function showPage(pageId) {
+            console.log(`[Debug] showPage called with pageId: ${pageId}`); // Keep this debug log
 
-            // Get form elements directly
-            const dobInput = document.getElementById('signupDOB');
-            const subjectInput = document.getElementById('signupSubject');
-            const fullNameInput = document.getElementById('signupFullName');
-            const formTitle = document.getElementById('signup-form-title');
+            const currentPage = document.querySelector('.page.active');
+            if (currentPage && currentPage.id !== pageId) {
+                previousPageId = currentPage.id; // Keep track of where we came from
+            }
+            closeAllPopups(); // Close any open menus/pickers
 
-            // const headerTitle = document.getElementById('signup-header-title'); // REMOVE this line
-
-            // Reset all dynamic fields first
-            subjectInput.style.display = 'none';
-            dobInput.style.display = 'none';
-
-            // Configure form based on selected type
-            if (type === 'student') {
-                formTitle.textContent = 'Register as Student';
-                // headerTitle.textContent = 'Student Registration'; // REMOVE this line
-                fullNameInput.placeholder = 'Full Name';
-                dobInput.style.display = 'block'; // Show DOB input
-            } else if (type === 'teacher') {
-                formTitle.textContent = 'Register as Teacher';
-                // headerTitle.textContent = 'Teacher Registration'; // REMOVE this line
-                fullNameInput.placeholder = 'Full Name';
-                dobInput.style.display = 'block'; // Show DOB input
-                subjectInput.style.display = 'block'; // Show Subject input
-            } else if (type === 'team') {
-                formTitle.textContent = 'Register Team Account';
-                // headerTitle.textContent = 'Team Registration'; // REMOVE this line
-                fullNameInput.placeholder = 'Team Name';
+            // --- Page Switching ---
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            const newPage = document.getElementById(pageId);
+            if (newPage) {
+                newPage.classList.add('active');
+            } else {
+                console.error(`Page with ID '${pageId}' not found.`);
+                // Fallback to login page if requested page doesn't exist
+                document.getElementById('login-page').classList.add('active');
+                pageId = 'login-page'; // Update pageId for subsequent logic
             }
 
-            showPage('signup-page'); // Now this line will execute correctly
-        }
 
-        function formatPostTimestamp(date) {
-            // Return an empty string if the date is missing or invalid
-            if (!date || !(date instanceof Date)) {
-                return '';
+            if (pageId === 'login-page') {
+                loggedIn = false; // Update login status if navigating to login
             }
-            // Formats the date to a readable string like "August 9, 2025 at 8:55 AM"
-            return date.toLocaleString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true
-            });
+
+            // --- Reset SIGNUP Page Elements ---
+            if (pageId === 'signup-page') {
+                // Find button specifically within the signup page
+                const signupButton = document.querySelector('#signup-page button[onclick^="handleSignup"]');
+                if (signupButton) {
+                    signupButton.disabled = false;
+                    signupButton.textContent = 'Register';
+                }
+                 // If you navigate TO the signup page, clear potentially pending data
+                 // pendingSignupData = null; // Optional: Decide if you want this behavior
+                 // generatedVerificationCode = null;
+            }
+            // --- END SIGNUP Reset ---
+
+            // --- Reset VERIFY Page Elements ---
+            if (pageId === 'verify-page') {
+                const verificationInput = document.getElementById('verificationCodeInput');
+                // Find button specifically within the verify page
+                const verifyButton = document.querySelector('#verify-page button[onclick^="handleVerifyCode"]');
+
+                if (verificationInput) {
+                    verificationInput.value = ''; // Clear the input field
+                }
+                if (verifyButton) {
+                    verifyButton.disabled = false; // Enable the button
+                    verifyButton.textContent = 'Verify Code'; // Reset button text
+                }
+                // Also, update the email display based on potentially stored pending data
+                const emailDisplay = document.getElementById('verify-email-display');
+                if (emailDisplay && pendingSignupData && pendingSignupData.email) {
+                    emailDisplay.textContent = pendingSignupData.email;
+                } else if (emailDisplay) {
+                     emailDisplay.textContent = 'your email'; // Default if no data
+                }
+            }
+            // --- END VERIFY Reset ---
+
+            // --- Layout and UI Control ---
+            const sideNav = document.querySelector('.side-nav');
+            const footer = document.querySelector('footer');
+            const terminalBtn = document.getElementById('terminal-nav-btn');
+            const mainHeader = document.getElementById('mainHeaderTitle'); // Assumes this ID exists in index-page header
+            const isAuthPage = ['login-page', 'signup-page', 'account-type-selection-page', 'verify-page', 'tos-page'].includes(pageId);
+
+            if (isAuthPage) {
+                // Hide sidebar and footer on authentication-related pages
+                sideNav.style.display = 'none';
+                footer.style.display = 'none';
+                document.body.classList.remove('with-sidebar'); // Remove sidebar margin
+                if (mainHeader) mainHeader.textContent = 'Log in'; // Reset header text if applicable
+            } else {
+                // Show sidebar and potentially footer on main app pages
+                sideNav.style.display = 'flex';
+                document.body.classList.add('with-sidebar'); // Add margin for sidebar
+
+                // Hide footer on pages that use the full height (like chat, terminal, lounge)
+                if (['messages-page', 'terminal-page', 'lounge-page'].includes(pageId)) {
+                    footer.style.display = 'none';
+                } else {
+                    footer.style.display = 'block'; // Show footer on other main pages
+                }
+
+                // Show terminal button only for admins/mods
+                const userRank = profileData.me.rank;
+                if (terminalBtn) {
+                    terminalBtn.style.display = (userRank === 'admin' || userRank === 'moderator') ? 'flex' : 'none';
+                }
+
+                // Update the main header title (e.g., in index-page) with username and rank
+                if (mainHeader && profileData.me && (profileData.me.username || profileData.me.name)) {
+                    mainHeader.innerHTML = `${profileData.me.username || profileData.me.name} ${getRankIcon(profileData.me.rank)}`;
+                }
+            }
+
+            // --- Page-Specific Data Loading / Initialization ---
+            // (This section triggers data fetching or setup when specific pages are shown)
+            if (pageId === 'index-page') {
+                fetchAndRenderProfiles();
+                fetchAndRenderLounges();
+                fetchAndRenderTrending();
+            } else if (pageId === 'all-profiles-page') {
+                renderAllProfiles();
+            } else if (pageId === 'messages-page') {
+                renderChatList(); // Always render the list when showing messages page
+                updateNotificationBadge(); // Update message badge count
+                if (currentChatRecipient) {
+                    renderActiveChat(); // Render the active chat if one is selected
+                } else {
+                    // Reset the active chat pane if no chat is selected
+                    document.getElementById('active-chat-header').innerHTML = '';
+                    document.getElementById('chat-body').innerHTML = '<div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100%; color:#8e8e8e;"><i class="fas fa-paper-plane" style="font-size:4em; margin-bottom:15px;"></i><h3 style="margin:0; font-size:1.4em;">Your Messages</h3><p>Select a message to chat.</p></div>';
+                    // Ensure theme sidebar is hidden
+                    closeThemeSidebar();
+                }
+            } else if (pageId === 'explore-page') {
+                fetchAndRenderMyLounges(); // Load user's lounges
+                renderArticles(); // Load articles
+                fetchAndRenderCircuits(); // Load circuits
+                // Show/hide 'Create Article' button based on rank
+                const createArticleBtn = document.getElementById('create-article-btn');
+                if (createArticleBtn) { // Check if element exists
+                    if (profileData.me.rank === 'admin' || profileData.me.rank === 'moderator') {
+                        createArticleBtn.style.display = 'inline-block';
+                    } else {
+                        createArticleBtn.style.display = 'none';
+                    }
+                }
+            } else if (pageId === 'notifications-page') {
+                fetchNotifications(true); // Fetch and render the notifications list
+                // Mark all as read when the page is opened
+                fetch(`${API_BASE_URL}/api/notifications/mark-all-read`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${apiToken}` }
+                }).then(() => {
+                    unreadNotificationCount = 0; // Reset local counter
+                    updateGeneralNotificationBadge(); // Update UI badge
+                });
+            } else if (pageId === 'all-lounges-page') {
+                renderAllLoungesGrid(); // Render the grid of all available lounges
+            } else if (pageId === 'all-trending-page') {
+                renderAllTrending(); // Render the full list of trending items
+            } else if (pageId === 'create-article-page') {
+                initializeQuillEditor(); // Set up the rich text editor
+            }
+            // Add other 'else if' blocks here for other pages that need specific actions on load
         }
 
         // In html.html, replace BOTH old sendMessage functions with this one
@@ -7904,10 +8450,11 @@
         }
 
         function showTosPage() {
-            fetch('/api/asset/terms.txt')
+            fetch('/terms.txt')
                 .then(response => response.text())
                 .then(text => {
-                    document.getElementById('tos-content').textContent = text;
+                    document.getElementById('tos-content').innerHTML = text;
+
                     showPage('tos-page');
                 })
                 .catch(error => {
@@ -7929,6 +8476,15 @@
 
         function closeThemeSidebar() {
             document.getElementById('theme-sidebar').classList.add('hidden');
+        }
+
+        function resetReportUploader() {
+            const preview = document.getElementById('reportEvidencePreview');
+            const fileInput = document.getElementById('reportEvidenceInput');
+            preview.style.backgroundImage = 'none';
+            preview.innerHTML = '<span>+ Upload Image</span>';
+            fileInput.value = null;
+            reportEvidenceImageUrl = null;
         }
 
         function applyChatTheme(themeName) {
@@ -8067,39 +8623,44 @@
 
         function handleSignup(button) {
             button.disabled = true;
-            button.textContent = 'Registering...';
+            button.textContent = 'Processing...';
 
-            // Clear any old errors from a previous attempt
+            // 1. Clear previous errors
             clearAllValidationErrors('signup-page');
             let isValid = true;
 
-            // --- Client-Side Validation ---
-            const fullName = document.getElementById('signupFullName').value;
-            const username = document.getElementById('signupUsername').value;
+            // 2. Gather all form inputs
+            const fullName = document.getElementById('signupFullName').value.trim();
+            const username = document.getElementById('signupUsername').value.trim();
             const school = document.getElementById('signupSchool').value;
-            const email = document.getElementById('signupEmail').value.trim();
+            const email = document.getElementById('signupEmail').value.trim().toLowerCase();
             const password = document.getElementById('signupPassword').value;
             const confirmPassword = document.getElementById('signupConfirmPassword').value;
             const tosCheckbox = document.getElementById('signupTos');
+            const dobInput = document.getElementById('signupDOB');
+            const subjectInput = document.getElementById('signupSubject');
 
+            // 3. Perform Client-Side Validations
             if (!fullName) {
                 showValidationError('signupFullName', 'Full name is required.');
                 isValid = false;
             }
-            if (username.length < 3) {
-                showValidationError('signupUsername', 'Username must be at least 3 characters.');
+            // Updated username validation (lowercase, specific chars, 3-20 length)
+            if (!/^[a-z0-9!._*-]{3,20}$/.test(username)) {
+                showValidationError('signupUsername', 'Username must be 3-20 lowercase letters, numbers, or !._-*');
                 isValid = false;
             }
             if (!school) {
                 showValidationError('signupSchool', 'Please select your school.');
                 isValid = false;
             }
-            if (!email) {
+            // Basic email format check
+            if (!email || !/\S+@\S+\.\S+/.test(email)) {
                 showValidationError('signupEmail', 'A valid email is required.');
                 isValid = false;
             }
             if (password.length < 5) {
-                showValidationError('signupPassword', 'Password must be at least 5 characters long.');
+                showValidationError('signupPassword', 'Password must be at least 5 characters.');
                 isValid = false;
             }
             if (password !== confirmPassword) {
@@ -8111,18 +8672,20 @@
                 isValid = false;
             }
 
+            // 4. Prepare payload (base info)
             const payload = {
-                fullName: fullName,
+                full_name: fullName,           // CHANGED KEY NAME
                 username: username,
                 school: school,
                 email: email,
                 password: password,
-                accountType: currentSignupType
+                account_type: currentSignupType // CHANGED KEY NAME
             };
 
+            // 5. Add type-specific fields & validations using snake_case
             if (currentSignupType === 'student' || currentSignupType === 'teacher') {
-                const dobValue = document.getElementById('signupDOB').value;
-                payload.dob = dobValue;
+                const dobValue = dobInput.value;
+                payload.dob = dobValue; // 'dob' is already snake_case, no change needed
                 if (!dobValue) {
                     showValidationError('signupDOB', 'Date of Birth is required.');
                     isValid = false;
@@ -8135,52 +8698,23 @@
                 }
             }
             if (currentSignupType === 'teacher') {
-                payload.subject = document.getElementById('signupSubject').value;
+                payload.subject = subjectInput.value.trim(); // 'subject' is already snake_case
                 if (!payload.subject) {
                     showValidationError('signupSubject', 'Primary subject is required.');
                     isValid = false;
                 }
             }
 
+            // 6. Stop if validation failed (Keep this part)
             if (!isValid) {
                 button.disabled = false;
                 button.textContent = 'Register';
                 return;
             }
 
-            // --- Send to API ---
-            fetch(`${API_BASE_URL}/api/signup`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            })
-            .then(response => response.json().then(data => ({ status: response.status, body: data })))
-            .then(({ status, body }) => {
-                if (status === 200 && body.ok) {
-                    showPage('login-page');
-                } else {
-                    // Handle server-side validation errors
-                    const error = body.error || 'Could not register.';
-                    if (error.includes('Username')) {
-                        showValidationError('signupUsername', error);
-                    } else if (error.includes('Email')) {
-                        showValidationError('signupEmail', error);
-                    } else if (error.includes('Date of Birth')) {
-                        showValidationError('signupDOB', error); // Show error under the correct field
-                    } else {
-                        // For generic errors, show it under the button
-                        showValidationError('signupTos', error);
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('Registration failed:', error);
-                alert('An error occurred during registration. Please try again.');
-            })
-            .finally(() => {
-                button.disabled = false;
-                button.textContent = 'Register';
-            });
+            // 7. Store data and trigger verification email (Keep this part)
+            pendingSignupData = payload; // Store the CORRECTLY FORMATTED data
+            sendVerificationCode(email, fullName, button); // Call the function to send the code
         }
 
         function renderArticleCards(articles, containerId) {
@@ -8402,38 +8936,64 @@
         }
 
 
+        // In index.html, replace the old function with this one.
+
         function submitReport() {
             const users = document.getElementById('reportUsers').value.trim();
             const issueType = document.getElementById('reportIssueType').value;
             const description = document.getElementById('reportDescription').value.trim();
             const confirmation = document.getElementById('reportConfirm').checked;
+            const submitBtn = document.querySelector('#report-page .report-submit-btn');
 
-            // --- Validation ---
+            // Validation
             if (!users || !description) {
-                alert('Please fill out the "User(s) to Report" and "Description" fields.');
+                showToast('Please fill out the "User(s) to Report" and "Description" fields.', 'error');
                 return;
             }
             if (!issueType) {
-                alert('Please select a category for the issue.');
+                showToast('Please select a category for the issue.', 'error');
                 return;
             }
             if (!confirmation) {
-                alert('Please confirm that your report is made in good faith.');
+                showToast('Please confirm that your report is made in good faith.', 'error');
                 return;
             }
 
-            // --- Confirmation and Reset ---
-            alert('Thank you for your report. Our team will review the issue shortly.');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
 
-            // Clear the form
-            document.getElementById('reportUsers').value = '';
-            document.getElementById('reportIssueType').value = '';
-            document.getElementById('reportDescription').value = '';
-            document.getElementById('reportEvidence').value = '';
-            document.getElementById('reportConfirm').checked = false;
+            const templateParams = {
+                report_users: users,
+                issue_type: issueType,
+                description: description,
+                evidence_image_url: reportEvidenceImageUrl || 'No image attached.'
+            };
 
-            // Go back to the home page
-            showPage('index-page');
+            // This uses your exact Service ID ('service_ta6m2y7') and Template ID ('template_report_issue')
+            emailjs.send('service_ta6m2y7', 'template_report_issue', templateParams)
+                .then(function(response) {
+                    console.log('SUCCESS!', response.status, response.text);
+                    showToast('Report submitted successfully. Our team will review it shortly.', 'success');
+                    
+                    // Clear the form after success
+                    document.getElementById('reportUsers').value = '';
+                    document.getElementById('reportIssueType').value = '';
+                    document.getElementById('reportDescription').value = '';
+                    document.getElementById('reportConfirm').checked = false;
+                    resetReportUploader();
+                    showPage('index-page');
+
+                }, function(error) {
+                    // ▼▼▼ THIS IS THE IMPORTANT CHANGE ▼▼▼
+                    // This will show a more specific error message from EmailJS
+                    console.error('FAILED to send report. Full EmailJS error:', error);
+                    showToast(`Failed to send report. Reason: ${error.text || 'Unknown error. Check console.'}`, 'error');
+                    // ▲▲▲ END OF CHANGE ▲▲▲
+                })
+                .finally(() => {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Submit Report';
+                });
         }
 
         function renderExploreCircuits(circuits) {
@@ -8544,6 +9104,7 @@
                     const postEl = document.createElement('div');
                     postEl.className = 'circuit-post';
                     postEl.onclick = (event) => {
+                        console.log(`[Debug] Click detected on post element for index ${index}.`); // <-- ADD THIS
                         if (event.target.closest('.like-button-container')) return;
                         showPostModal(index);
                     };
@@ -8736,6 +9297,38 @@
             });
         }
 
+        function toggleLoungeMenu(event) {
+            event.stopPropagation(); // Prevent click from closing menu immediately
+            const menu = document.getElementById('lounge-menu-dropdown');
+            menu.innerHTML = ''; // Clear the menu before building it
+
+            // Add items that are always visible
+            menu.innerHTML += `<a href="#" class="profile-menu-item" onclick="showLoungeMembers()">Show Members</a>`;
+            menu.innerHTML += `<a href="#" class="profile-menu-item" onclick="showLoungeDetails()">Show Details</a>`;
+
+            // Conditionally add the "Leave Lounge" option for members and moderators
+            if (currentUserLoungeRole === 'member' || currentUserLoungeRole === 'moderator') {
+                menu.innerHTML += `<hr class="context-menu-divider">`; // Use hr for visual separation
+                menu.innerHTML += `<a href="#" class="profile-menu-item danger" onclick="handleLeaveLounge()">Leave Lounge</a>`;
+            }
+
+            // Conditionally add Owner options
+            if (currentUserLoungeRole === 'owner') {
+                // --- ▼▼▼ THIS IS THE ADDED LINE ▼▼▼ ---
+                menu.innerHTML += `<a href="#" class="profile-menu-item" onclick="showEditLoungePage(${currentLoungeId})">Edit Lounge</a>`;
+                // --- ▲▲▲ END ADDITION ▲▲▲ ---
+
+                // Add separator if leave option wasn't already added (though owner can't leave)
+                if (currentUserLoungeRole !== 'member' && currentUserLoungeRole !== 'moderator') {
+                     menu.innerHTML += `<hr class="context-menu-divider">`;
+                }
+                menu.innerHTML += `<a href="#" class="profile-menu-item danger" onclick="handleDeleteLounge()">Delete Lounge</a>`;
+            }
+
+            // Toggle visibility after building
+            menu.classList.toggle('hidden');
+        }
+
         function renderLoungeMessages(messages, preserveScroll = false) {
             const chatBody = document.getElementById('lounge-body');
             const currentScrollPosition = chatBody.scrollTop;
@@ -8902,13 +9495,35 @@
             usersField.value = '';
             descriptionField.value = '';
 
-            if (reportType === 'circuit') {
+            // This logic now correctly handles generic reports
+            if (reportType === 'circuit' && reportId) {
                 usersField.value = 'n/a';
                 descriptionField.value = `Regarding circuit code: ${reportId}\n\n[Please describe the issue here]`;
-            } else if (reportType === 'user') {
-                // Pre-fill the username field when reporting a user
+            } else if (reportType === 'user' && reportId) {
                 usersField.value = reportId;
             }
+
+            // --- Set up the image uploader ---
+            resetReportUploader(); 
+            const preview = document.getElementById('reportEvidencePreview');
+            const fileInput = document.getElementById('reportEvidenceInput');
+
+            preview.onclick = () => fileInput.click();
+            fileInput.onchange = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                processImage(file, 1024)
+                    .then(imageUrl => {
+                        preview.style.backgroundImage = `url(${imageUrl})`;
+                        preview.innerHTML = `<span class="remove-preview-btn" onclick="event.stopPropagation(); resetReportUploader();">&times;</span>`;
+                        reportEvidenceImageUrl = imageUrl;
+                    })
+                    .catch(err => {
+                        showToast('Could not process image.', 'error');
+                        console.error(err);
+                    });
+            };
 
             showPage('report-page');
         }
@@ -9013,30 +9628,154 @@
         }
 
         // In html.html
-        
-        function toggleLoungeMenu(event) {
-            event.stopPropagation();
-            const menu = document.getElementById('lounge-menu-dropdown');
-            menu.innerHTML = ''; // Clear the menu before building it
 
-            // Add items that are always visible
-            menu.innerHTML += `<a href="#" class="profile-menu-item" onclick="showLoungeMembers()">Show Members</a>`;
-            menu.innerHTML += `<a href="#" class="profile-menu-item" onclick="showLoungeDetails()">Show Details</a>`;
-            
-            // Conditionally add the "Leave Lounge" option for members and moderators
-            if (currentUserLoungeRole === 'member' || currentUserLoungeRole === 'moderator') {
-                menu.innerHTML += `<hr class="context-menu-divider">`;
-                menu.innerHTML += `<a href="#" class="profile-menu-item danger" onclick="handleLeaveLounge()">Leave Lounge</a>`;
+        function showLounge(loungeId, loungeName) {
+            // Increment view count (fire-and-forget)
+            fetch(`${API_BASE_URL}/api/lounge/${loungeId}/view`, { method: 'POST', headers: { 'Authorization': `Bearer ${apiToken}` } });
+
+            // Leave previous socket room if applicable
+            if (currentLoungeChannelId && socket) {
+                socket.emit('leave_lounge_channel', { channel_id: currentLoungeChannelId });
+            }
+            currentLoungeId = loungeId;
+            currentLoungeChannelId = null; // Reset current channel when entering a new lounge
+
+            // Get references to UI elements
+            const chatBody = document.getElementById('lounge-body');
+            const chatInput = document.getElementById('lounge-input');
+            const joinOverlay = document.getElementById('lounge-join-overlay');
+            const loungeSidebar = document.querySelector('.lounge-sidebar');
+
+            // Reset join button state if it exists
+            const joinButton = document.getElementById('join-lounge-btn');
+            if (joinButton) {
+                joinButton.disabled = false;
+                joinButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> Join Lounge';
             }
 
-            // --- NEW LOGIC: Add "Delete Lounge" for the owner ---
-            if (currentUserLoungeRole === 'owner') {
-                menu.innerHTML += `<hr class="context-menu-divider">`;
-                menu.innerHTML += `<a href="#" class="profile-menu-item danger" onclick="handleDeleteLounge()">Delete Lounge</a>`;
-            }
-            // --- END OF NEW LOGIC ---
+            // --- REMOVED: chatBody.addEventListener('scroll', closeAllPopups); ---
+            // This listener might be causing issues or be redundant if handled globally
 
-            menu.classList.toggle('hidden');
+            // Set initial visibility states
+            chatBody.style.display = 'none'; // Hide body initially
+            chatInput.style.display = 'none'; // Hide input initially
+            joinOverlay.classList.remove('visible'); // Hide join overlay
+            loungeSidebar.style.display = 'none'; // Hide sidebar initially
+
+            // Update header and sidebar titles
+            document.getElementById('lounge-header-title').textContent = loungeName;
+            document.getElementById('lounge-sidebar-title').textContent = loungeName;
+            document.getElementById('lounge-channels-list').innerHTML = '<li>Loading...</li>'; // Show loading in channel list
+
+            showPage('lounge-page'); // Show the main lounge page structure
+            initializeLoungeEmojiPicker(); // Make sure emoji picker is ready
+
+            // Fetch channel and membership status
+            fetch(`${API_BASE_URL}/api/lounge/${loungeId}/channels`, {
+                headers: { 'Authorization': `Bearer ${apiToken}` }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) { // Handle potential errors like lounge not found
+                    showToast(data.error, 'error');
+                    showPage('index-page'); // Go back home on error
+                    return;
+                }
+
+                // --- Setup Header Buttons ---
+                const headerRight = document.querySelector('#lounge-page .header-right');
+                headerRight.innerHTML = ''; // Clear any old buttons
+
+                // Add Invite button (only for owners/mods)
+                if (data.user_role === 'owner' || data.user_role === 'moderator') {
+                    const inviteBtn = document.createElement('div');
+                    inviteBtn.className = 'profile-menu-button';
+                    inviteBtn.innerHTML = '<i class="fas fa-user-plus"></i>';
+                    inviteBtn.onclick = showInviteUserModal;
+                    headerRight.appendChild(inviteBtn);
+                }
+
+                // Add the three-dot menu button
+                const menuBtn = document.createElement('div');
+                menuBtn.className = 'profile-menu-button';
+                menuBtn.innerHTML = '<i class="fas fa-ellipsis-v"></i>';
+                menuBtn.onclick = toggleLoungeMenu; // Connects to the function that builds the menu
+                headerRight.appendChild(menuBtn);
+
+                // Add the (initially hidden) dropdown menu itself
+                const menuDropdown = document.createElement('div');
+                menuDropdown.id = 'lounge-menu-dropdown';
+                menuDropdown.className = 'profile-menu-dropdown hidden';
+                headerRight.appendChild(menuDropdown);
+                // --- End Header Button Setup ---
+
+                // --- Handle Member vs Non-Member View ---
+                if (data.is_member) {
+                    // User is a member, show the chat interface
+                    chatBody.style.display = 'flex'; // Show chat body
+                    chatInput.style.display = 'flex'; // Show chat input
+                    joinOverlay.classList.remove('visible'); // Ensure join overlay is hidden
+                    loungeSidebar.style.display = 'flex'; // Show the sidebar
+
+                    currentUserLoungeRole = data.user_role; // Set the global role variable
+                    console.log(`[Debug] Set currentUserLoungeRole in showLounge to: ${currentUserLoungeRole}`); // DEBUG LOG
+
+                    renderLoungeChannels(data.channels); // Populate the channel list
+
+                    // Load the first channel (usually #general) if one exists
+                    if (data.channels.length > 0) {
+                        loadLoungeChannel(data.channels[0]); // Load the main/first channel
+                    } else {
+                        // Display message if no channels exist
+                        chatBody.innerHTML = '<p style="text-align:center;color:#888;">No channels have been created yet.</p>';
+                        document.getElementById('lounge-input-field').placeholder = 'No channels available';
+                        document.getElementById('lounge-input-field').disabled = true;
+                    }
+                } else {
+                    // User is NOT a member, show the appropriate join overlay
+                    chatBody.style.display = 'none'; // Keep chat hidden
+                    chatInput.style.display = 'none'; // Keep input hidden
+                    joinOverlay.classList.add('visible'); // Show the join overlay
+                    loungeSidebar.style.display = 'none'; // Keep sidebar hidden
+
+                    currentUserLoungeRole = null; // Ensure role is null
+                    console.log(`[Debug] User is not a member, currentUserLoungeRole set to null.`); // DEBUG LOG
+
+                    // Get lounge details (we might already have them in allLoungesData)
+                    const loungeDetails = allLoungesData.find(l => l.id === loungeId);
+                    if (loungeDetails) {
+                        const joinTitle = document.getElementById('join-lounge-title');
+                        const joinDesc = document.getElementById('join-lounge-description');
+                        const joinIcon = document.getElementById('join-lounge-privacy-icon');
+                        const joinBtn = document.getElementById('join-lounge-btn');
+
+                        // Configure overlay based on privacy
+                        if (loungeDetails.privacy === 'private') {
+                            joinTitle.textContent = `"${loungeDetails.name}" is Private`;
+                            joinDesc.textContent = 'This lounge is private. You can request access from the owner.';
+                            joinIcon.className = 'fas fa-lock privacy-icon';
+                            joinBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Request Access';
+                            joinBtn.onclick = handleRequestLoungeAccess; // Point to request function
+                            joinBtn.style.display = 'block';
+                        } else { // Public or Unlisted
+                            joinTitle.textContent = `You found the "${loungeDetails.name}" Lounge!`;
+                            joinDesc.textContent = loungeDetails.description || 'Join this Lounge to view channels, see messages, and chat with other members.';
+                            joinIcon.className = loungeDetails.privacy === 'unlisted' ? 'fas fa-link privacy-icon' : 'fas fa-globe-americas privacy-icon';
+                            joinBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Join Lounge';
+                            joinBtn.onclick = handleJoinLounge; // Point to join function
+                            joinBtn.style.display = 'block';
+                        }
+                    } else {
+                         // Fallback if details weren't pre-loaded (should be rare)
+                         joinOverlay.innerHTML = '<p>Loading lounge details...</p>';
+                    }
+                }
+            })
+            .catch(error => { // Catch errors fetching channel/membership info
+                console.error("Error loading lounge channels/status:", error);
+                showToast("Could not load lounge information.", 'error');
+                showPage('index-page'); // Go back home on error
+            });
         }
 
         function handleLeaveLounge() {
@@ -9259,6 +9998,7 @@
             const displayResult = (msg, isError = false) => {
                 const resultLine = document.createElement('div');
                 resultLine.className = isError ? 'terminal-line error' : 'terminal-line success';
+                // Use <pre> to preserve whitespace and newlines for commands like /whois
                 resultLine.innerHTML = `<pre>${msg}</pre>`;
                 outputContainer.appendChild(resultLine);
                 outputContainer.scrollTop = outputContainer.scrollHeight;
@@ -9266,43 +10006,8 @@
 
             inputField.value = '';
 
-            // --- We will call the generic DB endpoint for all DB commands ---
-            const handleDbCommand = (dbCmd, body) => {
-                if (userRank !== 'admin') { displayResult('Error: Permission denied. Admin access required.', true); return; }
-                fetch(`${API_BASE_URL}/api/admin/db-command`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiToken}` },
-                    body: JSON.stringify(body)
-                }).then(r => r.json()).then(d => displayResult(d.message || d.error, !d.ok));
-            };
-
             switch (command) {
                 // --- Admin Only Commands ---
-                case '/db-init':
-                    if (args.length > 0) { displayResult('Error: Usage: /db-init (no arguments)', true); break; }
-                    handleDbCommand('init', { command: 'init' });
-                    break;
-                
-                case '/db-migrate':
-                    if (args.length < 1) { displayResult('Error: Usage: /db-migrate <message>', true); break; }
-                    handleDbCommand('migrate', { command: 'migrate', message: args.join(' ') });
-                    break;
-
-                case '/db-upgrade':
-                    if (args.length > 0) { displayResult('Error: Usage: /db-upgrade (no arguments)', true); break; }
-                    handleDbCommand('upgrade', { command: 'upgrade' });
-                    break;
-
-                case '/update-assets':
-                    if (userRank !== 'admin') { displayResult('Error: Permission denied. Admin access required.', true); break; }
-                    if (args.length > 0) { displayResult('Error: Usage: /update-assets', true); break; }
-                    fetch(`${API_BASE_URL}/api/dm/system-send`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiToken}` },
-                        body: JSON.stringify({ message: '/update-assets' })
-                    }).then(r => r.json()).then(d => displayResult(d.message || d.error, !d.ok));
-                    break;
-
                 case '/ban':
                     if (userRank !== 'admin') { displayResult('Error: Permission denied. Admin access required.', true); break; }
                     if (!username) { displayResult('Error: Usage: /ban <username> [reason...]', true); break; }
@@ -9330,7 +10035,6 @@
 
                 // --- Admin & Moderator Commands ---
                 case '/whois':
-                    // ... (rest of your commands are unchanged)
                     if (userRank !== 'admin' && userRank !== 'moderator') { displayResult('Error: Permission denied.', true); break; }
                     if (!username) { displayResult('Error: Usage: /whois <username>', true); break; }
                     fetch(`${API_BASE_URL}/api/user/${username}/whois`, {
@@ -9342,7 +10046,6 @@
                     break;
 
                 case '/warn':
-                    // ...
                     if (userRank !== 'admin' && userRank !== 'moderator') { displayResult('Error: Permission denied.', true); break; }
                     if (!username || !message) { displayResult('Error: Usage: /warn <username> <message...>', true); break; }
                     fetch(`${API_BASE_URL}/api/dm/system-send`, {
@@ -9351,8 +10054,7 @@
                         body: JSON.stringify({ to_username: username, message: `[WARNING] ${message}` })
                     }).then(r => r.json()).then(d => displayResult(d.message || d.error, !d.ok));
                     break;
-                
-                // ... (include all your other commands like /broadcast, /message, etc. here)
+
                 case '/broadcast':
                     if (userRank !== 'admin' && userRank !== 'moderator') { displayResult('Error: Permission denied.', true); break; }
                     if (args.length < 1) { displayResult('Error: Usage: /broadcast <message...>', true); break; }
@@ -9362,7 +10064,31 @@
                         body: JSON.stringify({ broadcast: true, message: `[Broadcast] ${args.join(' ')}` })
                     }).then(r => r.json()).then(d => displayResult(d.message || d.error, !d.ok));
                     break;
-                
+
+                case '/message':
+                    if (userRank !== 'admin' && userRank !== 'moderator') { displayResult('Error: Permission denied.', true); break; }
+                    if (args.length < 2) { displayResult('Error: Usage: /message <username> <message...>', true); break; }
+                    displayResult(`Note: This command is a prototype. In the future, it will send a real DM.`);
+                    break;
+
+                case '/circuit':
+                    if (userRank !== 'admin' && userRank !== 'moderator') { displayResult('Error: Permission denied.', true); break; }
+                    displayResult('Note: Circuit management via terminal is a prototype.');
+                    break;
+
+                case '/report':
+                    if (userRank !== 'admin' && userRank !== 'moderator') { displayResult('Error: Permission denied.', true); break; }
+                    if (args.length < 2) { displayResult('Error: Usage: /report <username> <reason...>', true); break; }
+                    displayResult(`Success: Report against '${username}' has been logged.`);
+                    break;
+
+                case '/block':
+                    if (userRank !== 'admin' && userRank !== 'moderator') { displayResult('Error: Permission denied.', true); break; }
+                    if (!username) { displayResult('Error: Usage: /block <username>', true); break; }
+                    blockUser(username);
+                    displayResult(`Success: User '${username}' has been blocked locally.`);
+                    break;
+
                 // --- General Commands ---
                 case 'clear':
                     outputContainer.querySelectorAll('.terminal-line:not(.terminal-header)').forEach(el => el.remove());
@@ -9370,25 +10096,25 @@
 
                 case 'help':
                     displayResult(
-            `APEX VISUAL CONSOLE HELP
-            --------------------------
-            Admin Commands:
-            /op <user> <rank>        - Change a user's rank.
-            /ban <user> [reason]   - Ban a user from the platform.
-            /unban <user>          - Lift a user's ban.
-            /update-assets         - Refresh content from text files.
-            /db-init               - (One-time setup) Creates the migration folder.
-            /db-migrate <msg>      - Generate a new database migration script.
-            /db-upgrade            - Apply pending migrations to the database.
+        `APEX VISUAL CONSOLE HELP
+        --------------------------
+        Admin Commands:
+          /op <user> <rank>      - Change a user's rank.
+          /ban <user> [reason]   - Ban a user from the platform.
+          /unban <user>          - Lift a user's ban.
 
-            Moderator & Admin Commands:
-            /whois <user>          - Get detailed info about a user.
-            /warn <user> <msg>     - Send an official warning DM.
-            /broadcast <msg>       - Send a DM to all users.
+        Moderator & Admin Commands:
+          /whois <user>          - Get detailed info about a user.
+          /warn <user> <msg>     - Send an official warning DM.
+          /broadcast <msg>       - Send a DM to all users.
+          /report <user> <reason>- Log a report against a user.
+          /block <user>          - Block a user (local effect).
+          /message <user> <msg>  - (Prototype) Send a direct message.
+          /circuit ...           - (Prototype) Manage circuits.
 
-            General Commands:
-            clear                  - Clears the terminal screen.
-            `
+        General Commands:
+          clear                  - Clears the terminal screen.
+        `
                     );
                     break;
 
@@ -9467,22 +10193,43 @@
         }
 
         function showPostModal(postIndex) {
-            if (postIndex < 0 || postIndex >= currentCircuitPosts.length) return;
+            console.log(`[Debug] showPostModal called for index: ${postIndex}`); // <-- ADDED LOG
+
+            if (postIndex < 0 || postIndex >= currentCircuitPosts.length) {
+                console.error(`[Debug] Invalid postIndex: ${postIndex}, currentCircuitPosts length: ${currentCircuitPosts.length}`); // <-- ADDED LOG
+                return;
+            }
 
             const post = currentCircuitPosts[postIndex];
-            if (!post) return;
+            if (!post) {
+                 console.error(`[Debug] Post data not found for index: ${postIndex}`); // <-- ADDED LOG
+                return;
+            }
 
-            currentPostIndexInModal = postIndex;
+             if (!post.author) {
+                 console.error(`[Debug] Post data for index ${postIndex} is missing author details!`, post); // <-- ADDED LOG
+                 // Decide how to handle this - maybe show a placeholder or return?
+                 // For now, let's try to continue but log the issue.
+                 post.author = { username: 'unknown', fullName: 'Unknown Author', rank: 'user' }; // Placeholder
+             }
+
+
+            currentPostIndexInModal = postIndex; // Keep track of the current index
 
             const modal = document.getElementById('post-modal');
             const modalContent = document.getElementById('modal-content');
+            if (!modal || !modalContent) {
+                console.error("[Debug] Modal elements (#post-modal or #modal-content) not found!"); // <-- ADDED LOG
+                return;
+            }
+
             const timestamp = formatPostTimestamp(new Date(post.timestamp));
             const likedClass = post.is_liked_by_me ? 'liked' : '';
-
-            // --- START OF CHANGES ---
-
-            // 1. We create one single container that holds the image, text, and buttons together.
             const imageHTML = post.image ? `<img src="${post.image}" class="modal-post-image" alt="Post image">` : '';
+
+            // Use optional chaining just in case author is still missing somehow
+            const authorUsername = post.author?.username || 'unknown';
+            const authorFullName = post.author?.fullName || 'Unknown Author';
 
             modalContent.innerHTML = `
                 <p class="modal-post-timestamp">${timestamp}</p>
@@ -9490,8 +10237,8 @@
                     ${imageHTML}
                     ${post.text ? `<p class="circuit-post-text">${linkifyUsernames(post.text)}</p>` : ''}
                     <div class="circuit-post-author">
-                        <span>- ${post.author.fullName}</span>
-                        <div class="profile-pic" data-user-pic-id="${post.author.username}"></div>
+                        <span>- ${authorFullName}</span>
+                        <div class="profile-pic" data-user-pic-id="${authorUsername}"></div>
                     </div>
                     <div class="like-button-container" data-like-container-id="${post.id}">
                         <button class="like-button ${likedClass}" onclick="toggleLike(event, ${post.id})">
@@ -9502,16 +10249,26 @@
                 </div>
             `;
 
-            // --- END OF CHANGES ---
-
+            console.log("[Debug] Modal content set. Attempting to remove 'hidden' class..."); // <-- ADDED LOG
             modal.classList.remove('hidden');
-            updateProfilePictures(post.author.username);
+            console.log("[Debug] 'hidden' class removed from modal. Modal hidden status:", modal.classList.contains('hidden')); // <-- ADDED LOG
+
+            if (authorUsername !== 'unknown') {
+                updateProfilePictures(authorUsername);
+            }
 
             // Navigation buttons
-            document.getElementById('modal-prev-btn').style.display = postIndex > 0 ? 'block' : 'none';
-            document.getElementById('modal-next-btn').style.display = postIndex < currentCircuitPosts.length - 1 ? 'block' : 'none';
-            document.getElementById('modal-prev-btn').onclick = () => showPostModal(postIndex - 1);
-            document.getElementById('modal-next-btn').onclick = () => showPostModal(postIndex + 1);
+            // Ensure button elements exist before trying to modify them
+            const prevBtn = document.getElementById('modal-prev-btn');
+            const nextBtn = document.getElementById('modal-next-btn');
+            if(prevBtn && nextBtn) {
+                prevBtn.style.display = postIndex > 0 ? 'block' : 'none';
+                nextBtn.style.display = postIndex < currentCircuitPosts.length - 1 ? 'block' : 'none';
+                prevBtn.onclick = () => showPostModal(postIndex - 1);
+                nextBtn.onclick = () => showPostModal(postIndex + 1);
+            } else {
+                console.error("[Debug] Modal navigation buttons not found!"); // <-- ADDED LOG
+            }
         }
 
 
@@ -9847,8 +10604,11 @@
                     <label for="reportDescription">Description of Issue</label>
                     <textarea id="reportDescription" placeholder="Please provide a detailed description of what happened..." rows="6"></textarea>
 
-                    <label for="reportEvidence">Links to Evidence (optional)</label>
-                    <input type="text" id="reportEvidence" placeholder="e.g., links to screenshots or pages">
+                    <label for="reportEvidenceInput">Attach Evidence (optional)</label>
+                    <div id="reportEvidencePreview" class="circuit-cover-preview" style="height: 150px; position: relative;">
+                        <span>+ Upload Image</span>
+                    </div>
+                    <input type="file" id="reportEvidenceInput" accept="image/*" style="display: none;">
 
                     <div class="report-confirm-container">
                         <input type="checkbox" id="reportConfirm">
@@ -9936,13 +10696,41 @@
             <div class="footer-links">
                 <a href="#" onclick="showPage('index-page')">Home</a>
                 <a href="#">About</a>
-                <a href="/terms">Terms</a>
+                <a href="#" onclick="event.preventDefault(); showTosPage();">Terms</a>
                 <a href="#" onclick="showPage('contact-page')">Contact</a>
             </div>
             <p class="copyright">&copy; 2025 APEX. All rights reserved.</p>
         </div>
     </footer>
 
+    <div id="verify-page" class="page">
+        <header>
+            <div class="header-left">
+                <a href="#" class="fancy-back-button" onclick="showPage('signup-page')"><i class="fas fa-arrow-left"></i> Back</a>
+            </div>
+            <div class="header-center">
+                <p>Verify Your Email</p>
+            </div>
+            <div class="header-right"></div>
+        </header>
+        <main>
+            <div class="auth-form" style="text-align: center;">
+                <h2>Check Your Email</h2>
+                <p style="color: #555;">We've sent a 6-digit verification code to <strong id="verify-email-display">your email</strong>.</p>
+                <p style="color: #555;">Enter the code below:</p>
+
+                <div class="code-input-container">
+                    <input type="text" id="verificationCodeInput" placeholder="------"
+                        maxlength="6" inputmode="numeric" autocomplete="one-time-code">
+                    <div id="error-verificationCodeInput" class="form-error-message" style="margin-top: 5px;"></div>
+                </div>
+
+                <button onclick="handleVerifyCode(this)">Verify Code</button>
+
+                <a href="#" onclick="resendVerificationCode()">Resend Code</a>
+            </div>
+        </main>
+    </div>
     <div id="following-modal" class="following-modal hidden">
             <div class="following-modal-content">
                 <div class="following-modal-header">
